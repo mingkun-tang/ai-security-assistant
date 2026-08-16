@@ -31,6 +31,14 @@ RECOMMENDATIONS = {
         "Use a Content Security Policy to reduce script execution impact",
         "Validate and sanitize input, but do not rely on filtering alone",
     ],
+    "ssrf": [
+        "Allowlist approved destinations where practical",
+        "Validate URL schemes and hosts before making outbound requests",
+        "Block private and internal IP ranges where appropriate",
+        "Prevent redirects from bypassing destination controls",
+        "Restrict outbound network access from application servers",
+        "Do not directly trust user-supplied URLs for server-side fetches",
+    ],
     "unknown": [
         "Review the request and identify what action is being performed",
         "Check if the action involves another user's data or privileges",
@@ -69,6 +77,11 @@ FOLLOW_UP_QUESTIONS = {
         "Is the input reflected or stored and then rendered in the page?",
         "Is the value encoded for the HTML or JavaScript context where it appears?",
         "Can a script payload execute in another user's browser?",
+    ],
+    "ssrf": [
+        "Does the server fetch a destination supplied by the user?",
+        "Can the destination be changed to an internal host or metadata endpoint?",
+        "Are outbound destinations allowlisted and validated server-side?",
     ],
     "unknown": [
         "What action is being performed?",

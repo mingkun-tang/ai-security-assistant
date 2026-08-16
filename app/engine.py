@@ -149,12 +149,64 @@ RENDERED_CONTENT_TARGET_WORDS = [
     "reflected",
     "page",
 ]
+SERVER_REQUEST_WORDS = [
+    "server fetches",
+    "server fetch",
+    "server retrieves",
+    "server connects to",
+    "server connects",
+    "server sends request",
+    "server sends a request",
+    "server requests",
+    "backend request",
+    "backend requests",
+    "backend fetches",
+    "backend retrieves",
+    "application retrieves",
+    "application server connects",
+    "make the backend request",
+    "make the server fetch",
+    "server-side request",
+    "server side request",
+]
+USER_CONTROLLED_URL_WORDS = [
+    "url supplied by the user",
+    "user supplied url",
+    "user-supplied url",
+    "url parameter",
+    "callback url",
+    "webhook url",
+    "remote url",
+    "url i provide",
+    "callback url i provide",
+    "whatever callback url",
+    "change the url",
+    "change the url parameter",
+]
+DESTINATION_REFERENCE_WORDS = [
+    "url",
+    "host",
+    "endpoint",
+    "domain",
+    "destination",
+    "callback",
+    "webhook",
+]
+REMOTE_URL_TARGET_WORDS = [
+    "url",
+    "host",
+    "endpoint",
+    "callback",
+    "webhook",
+    "remote url",
+]
 INJECT_WORDS = ["inject", "injection"]
 
 ISSUE_PRIORITY = [
     "privilege_escalation",
     "sql_injection",
     "xss",
+    "ssrf",
     "delete_action",
     "modify_data",
     "idor",
@@ -215,6 +267,11 @@ def empty_signals():
             "browser_render": False,
             "appears_in_output": False,
             "missing_escaping": False,
+        },
+        "network": {
+            "server_request": False,
+            "user_controlled_url": False,
+            "destination_reference": False,
         },
     }
 
@@ -282,6 +339,14 @@ def collect_signals(text):
         text, MISSING_ESCAPING_WORDS
     )
 
+    signals["network"]["server_request"] = any_term_in_text(text, SERVER_REQUEST_WORDS)
+    signals["network"]["user_controlled_url"] = any_term_in_text(
+        text, USER_CONTROLLED_URL_WORDS
+    )
+    signals["network"]["destination_reference"] = any_term_in_text(
+        text, DESTINATION_REFERENCE_WORDS
+    )
+
     return signals
 
 
@@ -297,6 +362,8 @@ def collect_targets(text):
         targets.append("database")
     if any_term_in_text(text, RENDERED_CONTENT_TARGET_WORDS):
         targets.append("rendered content")
+    if any_term_in_text(text, REMOTE_URL_TARGET_WORDS):
+        targets.append("remote url")
     return targets
 
 
@@ -455,6 +522,25 @@ def has_xss_evidence(signals):
     return has_user_input and has_output_context and has_abuse_or_missing_control
 
 
+def ssrf_issue():
+    return build_issue(
+        "ssrf",
+        "validation or restriction of server-side outbound request destinations",
+        "server trusts a destination controlled by the user",
+        "user-supplied destinations are safe for the server to contact",
+        "access to internal services, cloud metadata endpoints, or unintended external resources",
+    )
+
+
+def has_ssrf_evidence(signals):
+    network = signals.get("network", {})
+    return (
+        network.get("server_request")
+        and network.get("user_controlled_url")
+        and network.get("destination_reference")
+    )
+
+
 def scenario_is_understood(action, targets):
     return action is not None and len(targets) > 0
 
@@ -495,6 +581,9 @@ def collect_matching_issues(data):
 
     if has_xss_evidence(signals):
         matches.append(xss_issue())
+
+    if has_ssrf_evidence(signals):
+        matches.append(ssrf_issue())
 
     if action == "delete" and has_any_target(targets, ["user data"]) and other_user:
         matches.append(delete_action_issue())
@@ -545,6 +634,9 @@ def confidence_from_evidence(data, result):
     if result["issue_type"] == "xss":
         return "high"
 
+    if result["issue_type"] == "ssrf":
+        return "high"
+
     if action is None or not targets:
         return "low"
 
@@ -574,6 +666,7 @@ def evidence_snapshot(data):
     injection = data["signals"].get("injection", {})
     input_signals = data["signals"].get("input", {})
     rendering = data["signals"].get("rendering", {})
+    network = data["signals"].get("network", {})
     return {
         "action": data["action"],
         "targets": list(data.get("targets", [])),
@@ -588,6 +681,9 @@ def evidence_snapshot(data):
         "html_context": rendering.get("html_context", False),
         "javascript_context": rendering.get("javascript_context", False),
         "reflected_output": rendering.get("reflected_output", False),
+        "server_request": network.get("server_request", False),
+        "user_controlled_url": network.get("user_controlled_url", False),
+        "destination_reference": network.get("destination_reference", False),
     }
 
 
@@ -611,6 +707,7 @@ ISSUE_DISPLAY_NAMES = {
     "delete_action": "Unauthorized destructive action",
     "sql_injection": "SQL Injection",
     "xss": "Cross-Site Scripting (XSS)",
+    "ssrf": "Server-Side Request Forgery (SSRF)",
     "unknown": "Insufficient evidence",
 }
 NO_FINDING_VERIFICATION = {
@@ -687,6 +784,13 @@ def explain_analysis(analysis):
             "JavaScript, or attribute context where they are rendered, "
             "and input validation alone is not enough."
         )
+    elif missing_control == "validation or restriction of server-side outbound request destinations":
+        explanation["missing_control"] = (
+            "Validation or restriction of outbound request destinations "
+            "may be missing. The server should only contact approved hosts "
+            "and schemes, and should not treat a user-supplied URL as a "
+            "trusted destination."
+        )
     elif missing_control == "unknown":
         explanation["missing_control"] = (
             "There is not enough detail in the scenario to identify a "
@@ -738,6 +842,13 @@ def explain_analysis(analysis):
             "The application may be rendering attacker-controlled input in "
             "the browser. That breaks the trust boundary between untrusted "
             "request data and executable page content."
+        )
+    elif broken_trust == "server trusts a destination controlled by the user":
+        explanation["broken_trust"] = (
+            "The server may be trusting a destination controlled by the "
+            "user and making requests on the user's behalf. That breaks "
+            "the trust boundary between untrusted input and the server's "
+            "outbound network access."
         )
     elif broken_trust == "unknown":
         explanation["broken_trust"] = (
