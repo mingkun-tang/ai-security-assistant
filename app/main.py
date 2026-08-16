@@ -1,6 +1,6 @@
-from engine import normalize_input, analyze, generate_output
+from engine import analyze, generate_output, normalize_input
 
-user_input=input("Enter a security sceneario: ")
+user_input = input("Enter a security scenario: ")
 
 normalized = normalize_input(user_input)
 analysis = analyze(normalized)
