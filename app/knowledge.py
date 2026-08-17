@@ -20,10 +20,12 @@ RECOMMENDATIONS = {
         "Prevent deletion of critical accounts (ex: last admin)",
     ],
     "sql_injection": [
-        "Use parameterized queries or a safe ORM for all database access",
-        "Never concatenate untrusted input into SQL strings",
-        "Validate and constrain input types before they reach the query layer",
-        "Test search and filter parameters with intentional SQL metacharacters",
+        "Use parameterized or prepared statements for all database access",
+        "Never concatenate user input into SQL strings",
+        "Prefer ORM parameter binding over raw dynamic SQL",
+        "Validate input where appropriate before it reaches the query layer",
+        "Apply least-privilege database accounts",
+        "Log SQL errors securely without exposing query details to users",
     ],
     "xss": [
         "Apply context-aware output encoding before rendering user input",
@@ -38,6 +40,24 @@ RECOMMENDATIONS = {
         "Prevent redirects from bypassing destination controls",
         "Restrict outbound network access from application servers",
         "Do not directly trust user-supplied URLs for server-side fetches",
+    ],
+    "file_upload": [
+        "Allowlist approved file types rather than blocking a denylist",
+        "Validate actual file content, not only the extension or MIME header",
+        "Rename uploaded files with server-generated names",
+        "Store uploads outside executable or web-root locations",
+        "Disable execution permissions for upload directories",
+        "Enforce file size limits",
+        "Scan uploaded files where appropriate",
+        "Do not trust user-controlled filenames or MIME types",
+    ],
+    "csrf": [
+        "Use anti-CSRF tokens for state-changing requests where appropriate",
+        "Use SameSite cookie protections as defense-in-depth",
+        "Validate Origin or Referer headers where appropriate",
+        "Avoid sensitive state changes via GET requests",
+        "Require re-authentication or step-up verification for highly sensitive actions",
+        "Ensure state-changing requests cannot be triggered cross-site without user intent",
     ],
     "unknown": [
         "Review the request and identify what action is being performed",
@@ -70,8 +90,9 @@ FOLLOW_UP_QUESTIONS = {
     ],
     "sql_injection": [
         "Is the value concatenated into a SQL string?",
-        "Are parameterized queries or an ORM used for this parameter?",
+        "Are parameterized queries or prepared statements used for this input?",
         "Does crafted input change the query structure or returned rows?",
+        "Does the database account follow least privilege?",
     ],
     "xss": [
         "Is the input reflected or stored and then rendered in the page?",
@@ -82,6 +103,16 @@ FOLLOW_UP_QUESTIONS = {
         "Does the server fetch a destination supplied by the user?",
         "Can the destination be changed to an internal host or metadata endpoint?",
         "Are outbound destinations allowlisted and validated server-side?",
+    ],
+    "file_upload": [
+        "Can a user upload an executable or script file type?",
+        "Is the uploaded file stored where it can be requested or executed?",
+        "Does the server validate content, not only extension or MIME type?",
+    ],
+    "csrf": [
+        "Can a third-party site trigger this state-changing request while the user is logged in?",
+        "Does the request require an anti-CSRF token or equivalent intent check?",
+        "Would SameSite cookies or Origin/Referer validation block the forged request?",
     ],
     "unknown": [
         "What action is being performed?",

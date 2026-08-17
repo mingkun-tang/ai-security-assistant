@@ -74,29 +74,79 @@ USER_CONTROLLED_INPUT_WORDS = [
     "input",
     "user input",
     "my input",
+    "attacker input",
     "search parameter",
     "form field",
     "comment field",
     "comment",
     "request parameter",
     "query parameter",
+    "url parameter",
     "search",
+    "username",
+    "password",
 ]
 DATABASE_CONTEXT_WORDS = [
     "sql",
     "database",
-    "query",
     "db",
     "mysql",
     "postgres",
     "postgresql",
     "sqlite",
 ]
+SQL_CONTEXT_WORDS = [
+    "sql query",
+    "sql statement",
+    "select statement",
+    "select query",
+    "insert statement",
+    "update statement",
+    "where clause",
+    "executes sql",
+    "execute sql",
+    "orm raw query",
+    "raw sql",
+    "login query",
+    "select",
+    "insert",
+]
 INJECTION_ATTEMPT_WORDS = [
     "inject",
     "injection",
     "sql injection",
     "sqli",
+]
+UNSAFE_QUERY_CONSTRUCTION_WORDS = [
+    "string concatenation",
+    "concatenated",
+    "concatenates",
+    "concatenate",
+    "concatenated into",
+    "dynamic sql",
+    "unsanitized",
+    "unvalidated",
+    "without validation",
+    "no validation",
+    "raw query",
+    "no parameterized query",
+    "no prepared statement",
+    "without parameterized",
+    "without prepared",
+    "directly inserted",
+    "inserted directly",
+    "inserted directly into",
+    "inserted into the where",
+    "inserted into",
+    "query built from",
+    "built with string concatenation",
+    "builds sql",
+    "build sql",
+    "input concatenated",
+    "concatenated into a sql",
+    "concatenated into a select",
+    "escaping missing",
+    "without escaping",
 ]
 MISSING_VALIDATION_WORDS = [
     "unsanitized",
@@ -107,6 +157,14 @@ MISSING_VALIDATION_WORDS = [
     "string concatenation",
     "concatenated",
 ]
+PARAMETERIZED_QUERY_PRESENT_WORDS = [
+    "parameterized query",
+    "parameterized queries",
+    "prepared statement",
+    "prepared statements",
+    "uses parameterized",
+    "parameter binding",
+]
 DATABASE_TARGET_WORDS = [
     "sql",
     "database",
@@ -116,6 +174,8 @@ DATABASE_TARGET_WORDS = [
     "postgres",
     "postgresql",
     "sqlite",
+    "select",
+    "where clause",
 ]
 RENDERED_OUTPUT_WORDS = ["rendered", "render", "displayed", "shown"]
 HTML_CONTEXT_WORDS = ["html", "markup"]
@@ -200,6 +260,170 @@ REMOTE_URL_TARGET_WORDS = [
     "webhook",
     "remote url",
 ]
+FILE_UPLOAD_ACTION_WORDS = [
+    "upload file",
+    "upload a file",
+    "upload an",
+    "upload a",
+    "uploaded a",
+    "uploaded an",
+    "can upload",
+    "lets me upload",
+    "let me upload",
+    "allows me to upload",
+    "allows me upload",
+    "submit file",
+    "attach file",
+    "send file",
+    "upload php",
+    "upload a php",
+    "upload an executable",
+    "upload a script",
+    "upload script",
+    "upload an executable file",
+    "upload a script file",
+]
+DANGEROUS_FILE_WORDS = [
+    "php",
+    "php file",
+    "jsp",
+    "jsp file",
+    "asp",
+    "aspx",
+    "asp file",
+    "executable",
+    "executable file",
+    "exe",
+    "shell",
+    "shell script",
+    "script file",
+    "server-executable",
+    "cgi",
+    ".php",
+    ".jsp",
+    ".asp",
+    ".aspx",
+    ".exe",
+    ".sh",
+    ".py",
+    ".cgi",
+]
+SAFE_FILE_WORDS = [
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "pdf",
+    "profile picture",
+    "image",
+]
+UPLOAD_EXECUTION_CONTEXT_WORDS = [
+    "uploads folder",
+    "upload folder",
+    "web-accessible",
+    "web accessible",
+    "server serves",
+    "serves it",
+    "served directly",
+    "served from",
+    "can be executed",
+    "executed",
+    "access it from the website",
+    "access it from the site",
+    "filename is trusted",
+    "content type is trusted",
+    "mime type is trusted",
+    "trusts the filename",
+    "trusts the content type",
+]
+UPLOADED_FILE_TARGET_WORDS = [
+    "upload",
+    "uploaded",
+    "file",
+    "php",
+    "executable",
+    "script file",
+]
+STATE_CHANGE_WORDS = [
+    "change password",
+    "password change",
+    "password-change",
+    "update password",
+    "update email",
+    "email change",
+    "change email",
+    "update profile",
+    "modify profile",
+    "delete account",
+    "delete the account",
+    "delete the user's account",
+    "delete their account",
+    "can delete",
+    "transfer money",
+    "modify settings",
+    "change settings",
+    "update settings",
+    "sensitive action",
+]
+SESSION_CONTEXT_WORDS = [
+    "logged in",
+    "authenticated",
+    "authenticated session",
+    "session cookie",
+    "browser automatically sends",
+    "automatically sends the session cookie",
+    "authenticated user",
+    "while i am logged in",
+    "while the victim is authenticated",
+    "existing session",
+    "ambient credentials",
+]
+CROSS_SITE_TRIGGER_WORDS = [
+    "malicious site",
+    "malicious website",
+    "another website",
+    "another site",
+    "forged request",
+    "cross-site",
+    "cross site",
+    "from another site",
+    "from another website",
+    "can trigger",
+    "trigger an",
+    "trigger a",
+]
+MISSING_ANTI_CSRF_WORDS = [
+    "no csrf token",
+    "without csrf token",
+    "missing csrf token",
+    "has no csrf token",
+    "request has no csrf token",
+    "no anti-csrf",
+    "missing anti-csrf",
+    "without anti-csrf",
+    "no request validation",
+    "without request validation",
+    "missing request validation",
+    "accepts cross-site",
+    "cross-site submission",
+]
+ANTI_CSRF_PRESENT_WORDS = [
+    "valid csrf token",
+    "includes a csrf token",
+    "includes a valid csrf token",
+    "has a csrf token",
+    "with a csrf token",
+    "anti-csrf token is present",
+]
+STATE_CHANGING_REQUEST_TARGET_WORDS = [
+    "password",
+    "email",
+    "profile",
+    "account",
+    "settings",
+    "transfer",
+    "csrf",
+]
 INJECT_WORDS = ["inject", "injection"]
 
 ISSUE_PRIORITY = [
@@ -207,6 +431,8 @@ ISSUE_PRIORITY = [
     "sql_injection",
     "xss",
     "ssrf",
+    "file_upload",
+    "csrf",
     "delete_action",
     "modify_data",
     "idor",
@@ -255,9 +481,24 @@ def empty_signals():
         },
         "injection": {
             "database_context": False,
+            "sql_context": False,
             "query_context": False,
             "injection_attempt": False,
             "missing_validation": False,
+            "unsafe_query_construction": False,
+            "parameterized_query_present": False,
+        },
+        "database": {
+            "database_context": False,
+        },
+        "sql_context": {
+            "sql_language_context": False,
+        },
+        "query_construction": {
+            "unsafe_construction": False,
+        },
+        "parameterization": {
+            "parameterized_query_present": False,
         },
         "rendering": {
             "rendered_output": False,
@@ -272,6 +513,19 @@ def empty_signals():
             "server_request": False,
             "user_controlled_url": False,
             "destination_reference": False,
+        },
+        "upload": {
+            "file_upload_action": False,
+            "dangerous_file": False,
+            "safe_file_type": False,
+            "execution_context": False,
+        },
+        "request": {
+            "state_change": False,
+            "session_context": False,
+            "cross_site_trigger": False,
+            "missing_anti_csrf_validation": False,
+            "anti_csrf_present": False,
         },
     }
 
@@ -305,19 +559,37 @@ def collect_signals(text):
             "search parameter",
             "request parameter",
             "query parameter",
+            "url parameter",
             "form field",
         ],
     )
     signals["injection"]["database_context"] = any_term_in_text(
         text, DATABASE_CONTEXT_WORDS
     )
-    signals["injection"]["query_context"] = term_in_text(text, "query")
+    signals["injection"]["sql_context"] = any_term_in_text(text, SQL_CONTEXT_WORDS)
+    signals["injection"]["query_context"] = any_term_in_text(
+        text, ["sql query", "login query", "select query", "query"]
+    )
     signals["injection"]["injection_attempt"] = any_term_in_text(
         text, INJECTION_ATTEMPT_WORDS
     )
     signals["injection"]["missing_validation"] = any_term_in_text(
         text, MISSING_VALIDATION_WORDS
     )
+    signals["injection"]["unsafe_query_construction"] = any_term_in_text(
+        text, UNSAFE_QUERY_CONSTRUCTION_WORDS
+    )
+    signals["injection"]["parameterized_query_present"] = any_term_in_text(
+        text, PARAMETERIZED_QUERY_PRESENT_WORDS
+    )
+    signals["database"]["database_context"] = signals["injection"]["database_context"]
+    signals["sql_context"]["sql_language_context"] = signals["injection"]["sql_context"]
+    signals["query_construction"]["unsafe_construction"] = signals["injection"][
+        "unsafe_query_construction"
+    ]
+    signals["parameterization"]["parameterized_query_present"] = signals["injection"][
+        "parameterized_query_present"
+    ]
 
     signals["rendering"]["rendered_output"] = any_term_in_text(
         text, RENDERED_OUTPUT_WORDS
@@ -347,6 +619,29 @@ def collect_signals(text):
         text, DESTINATION_REFERENCE_WORDS
     )
 
+    signals["upload"]["file_upload_action"] = any_term_in_text(
+        text, FILE_UPLOAD_ACTION_WORDS
+    )
+    signals["upload"]["dangerous_file"] = any_term_in_text(text, DANGEROUS_FILE_WORDS)
+    signals["upload"]["safe_file_type"] = any_term_in_text(text, SAFE_FILE_WORDS)
+    signals["upload"]["execution_context"] = any_term_in_text(
+        text, UPLOAD_EXECUTION_CONTEXT_WORDS
+    )
+
+    signals["request"]["state_change"] = any_term_in_text(text, STATE_CHANGE_WORDS)
+    signals["request"]["session_context"] = any_term_in_text(
+        text, SESSION_CONTEXT_WORDS
+    )
+    signals["request"]["cross_site_trigger"] = any_term_in_text(
+        text, CROSS_SITE_TRIGGER_WORDS
+    )
+    signals["request"]["missing_anti_csrf_validation"] = any_term_in_text(
+        text, MISSING_ANTI_CSRF_WORDS
+    )
+    signals["request"]["anti_csrf_present"] = any_term_in_text(
+        text, ANTI_CSRF_PRESENT_WORDS
+    )
+
     return signals
 
 
@@ -364,6 +659,10 @@ def collect_targets(text):
         targets.append("rendered content")
     if any_term_in_text(text, REMOTE_URL_TARGET_WORDS):
         targets.append("remote url")
+    if any_term_in_text(text, UPLOADED_FILE_TARGET_WORDS):
+        targets.append("uploaded file")
+    if any_term_in_text(text, STATE_CHANGING_REQUEST_TARGET_WORDS):
+        targets.append("state changing request")
     return targets
 
 
@@ -463,27 +762,48 @@ def idor_issue():
 def sql_injection_issue():
     return build_issue(
         "sql_injection",
-        "parameterized queries or input validation for database queries",
-        "user-controlled input is trusted inside a database query",
-        "user input cannot change the structure of a database query",
-        "unauthorized database access, data disclosure, or data tampering",
+        "SQL queries constructed from user-controlled input instead of parameterized queries",
+        "attacker-controlled input is trusted as part of executable SQL",
+        "user input cannot modify query structure",
+        "read, modify, or delete database records, or bypass authentication",
+    )
+
+
+def has_sql_injection_user_input(signals):
+    input_signals = signals.get("input", {})
+    return (
+        input_signals.get("user_controlled_input")
+        or input_signals.get("parameter_reference")
+    )
+
+
+def has_sql_injection_database_context(signals):
+    injection = signals.get("injection", {})
+    return (
+        injection.get("database_context")
+        or injection.get("sql_context")
+        or injection.get("query_context")
+    )
+
+
+def has_sql_injection_unsafe_construction(signals):
+    injection = signals.get("injection", {})
+    return (
+        injection.get("unsafe_query_construction")
+        or injection.get("injection_attempt")
+        or injection.get("missing_validation")
     )
 
 
 def has_sql_injection_evidence(signals):
-    input_signals = signals.get("input", {})
     injection = signals.get("injection", {})
-    has_user_input = (
-        input_signals.get("user_controlled_input")
-        or input_signals.get("parameter_reference")
+    if injection.get("parameterized_query_present"):
+        return False
+    return (
+        has_sql_injection_user_input(signals)
+        and has_sql_injection_database_context(signals)
+        and has_sql_injection_unsafe_construction(signals)
     )
-    has_database_context = (
-        injection.get("database_context") or injection.get("query_context")
-    )
-    has_abuse_or_missing_control = (
-        injection.get("injection_attempt") or injection.get("missing_validation")
-    )
-    return has_user_input and has_database_context and has_abuse_or_missing_control
 
 
 def xss_issue():
@@ -541,6 +861,44 @@ def has_ssrf_evidence(signals):
     )
 
 
+def file_upload_issue():
+    return build_issue(
+        "file_upload",
+        "safe file-type validation, content validation, storage isolation, or execution prevention",
+        "server trusts user-supplied files, filenames, extensions, or content types as safe",
+        "uploaded files are harmless and cannot execute or affect the application",
+        "upload of executable or malicious content leading to code execution, stored XSS, malware hosting, or application compromise",
+    )
+
+
+def has_file_upload_evidence(signals):
+    upload = signals.get("upload", {})
+    return upload.get("file_upload_action") and upload.get("dangerous_file")
+
+
+def csrf_issue():
+    return build_issue(
+        "csrf",
+        "anti-CSRF protections such as unpredictable request tokens or equivalent request-intent validation",
+        "application trusts that a request carrying valid session credentials was intentionally initiated by the authenticated user",
+        "possession of the user's session cookie proves user intent",
+        "an authenticated user's browser may perform sensitive actions without the user's consent",
+    )
+
+
+def has_csrf_evidence(signals):
+    request = signals.get("request", {})
+    if request.get("anti_csrf_present"):
+        return False
+    has_state_change = request.get("state_change")
+    has_session = request.get("session_context")
+    has_forgery_or_missing_validation = (
+        request.get("cross_site_trigger")
+        or request.get("missing_anti_csrf_validation")
+    )
+    return has_state_change and has_session and has_forgery_or_missing_validation
+
+
 def scenario_is_understood(action, targets):
     return action is not None and len(targets) > 0
 
@@ -585,6 +943,12 @@ def collect_matching_issues(data):
     if has_ssrf_evidence(signals):
         matches.append(ssrf_issue())
 
+    if has_file_upload_evidence(signals):
+        matches.append(file_upload_issue())
+
+    if has_csrf_evidence(signals):
+        matches.append(csrf_issue())
+
     if action == "delete" and has_any_target(targets, ["user data"]) and other_user:
         matches.append(delete_action_issue())
 
@@ -627,6 +991,7 @@ def confidence_from_evidence(data, result):
     mixed_ownership = other_user and self_reference
     missing_ownership = not other_user and not self_reference
     mixed_actions = mixed_action_scores(data.get("action_scores", {}))
+    signals = data["signals"]
 
     if result["issue_type"] == "sql_injection":
         return "high"
@@ -636,6 +1001,29 @@ def confidence_from_evidence(data, result):
 
     if result["issue_type"] == "ssrf":
         return "high"
+
+    if result["issue_type"] == "file_upload":
+        return "high"
+
+    if result["issue_type"] == "csrf":
+        return "high"
+
+    partial_sqli_evidence = (
+        has_sql_injection_user_input(signals)
+        and has_sql_injection_database_context(signals)
+        and not has_sql_injection_unsafe_construction(signals)
+    )
+    if not result.get("vulnerability_indicated") and partial_sqli_evidence:
+        return "medium"
+
+    database_only_sqli_mention = (
+        has_sql_injection_database_context(signals)
+        and not has_sql_injection_user_input(signals)
+        and not has_sql_injection_unsafe_construction(signals)
+    )
+    if not result.get("vulnerability_indicated") and database_only_sqli_mention:
+        if action is None:
+            return "low"
 
     if action is None or not targets:
         return "low"
@@ -675,8 +1063,15 @@ def evidence_snapshot(data):
         "action_scores": dict(data.get("action_scores", {})),
         "user_controlled_input": input_signals.get("user_controlled_input", False),
         "database_context": injection.get("database_context", False),
+        "sql_context": injection.get("sql_context", False),
         "injection_attempt": injection.get("injection_attempt", False),
         "missing_validation": injection.get("missing_validation", False),
+        "unsafe_query_construction": injection.get(
+            "unsafe_query_construction", False
+        ),
+        "parameterized_query_present": injection.get(
+            "parameterized_query_present", False
+        ),
         "rendered_output": rendering.get("rendered_output", False),
         "html_context": rendering.get("html_context", False),
         "javascript_context": rendering.get("javascript_context", False),
@@ -684,6 +1079,28 @@ def evidence_snapshot(data):
         "server_request": network.get("server_request", False),
         "user_controlled_url": network.get("user_controlled_url", False),
         "destination_reference": network.get("destination_reference", False),
+        "file_upload_action": data["signals"].get("upload", {}).get(
+            "file_upload_action", False
+        ),
+        "dangerous_file": data["signals"].get("upload", {}).get(
+            "dangerous_file", False
+        ),
+        "execution_context": data["signals"].get("upload", {}).get(
+            "execution_context", False
+        ),
+        "safe_file_type": data["signals"].get("upload", {}).get(
+            "safe_file_type", False
+        ),
+        "state_change": data["signals"].get("request", {}).get("state_change", False),
+        "session_context": data["signals"].get("request", {}).get(
+            "session_context", False
+        ),
+        "cross_site_trigger": data["signals"].get("request", {}).get(
+            "cross_site_trigger", False
+        ),
+        "missing_anti_csrf_validation": data["signals"].get("request", {}).get(
+            "missing_anti_csrf_validation", False
+        ),
     }
 
 
@@ -708,6 +1125,8 @@ ISSUE_DISPLAY_NAMES = {
     "sql_injection": "SQL Injection",
     "xss": "Cross-Site Scripting (XSS)",
     "ssrf": "Server-Side Request Forgery (SSRF)",
+    "file_upload": "Insecure File Upload",
+    "csrf": "Cross-Site Request Forgery (CSRF)",
     "unknown": "Insufficient evidence",
 }
 NO_FINDING_VERIFICATION = {
@@ -777,6 +1196,13 @@ def explain_analysis(analysis):
             "should be passed through parameterized queries or an ORM, "
             "not concatenated into SQL strings."
         )
+    elif missing_control == "SQL queries constructed from user-controlled input instead of parameterized queries":
+        explanation["missing_control"] = (
+            "The application may be constructing SQL queries using "
+            "user-controlled input instead of parameterized queries. "
+            "Prepared statements or ORM parameter binding should keep "
+            "untrusted values out of the query structure."
+        )
     elif missing_control == "output encoding or context-aware escaping for rendered content":
         explanation["missing_control"] = (
             "Output encoding or context-aware escaping may be missing. "
@@ -790,6 +1216,20 @@ def explain_analysis(analysis):
             "may be missing. The server should only contact approved hosts "
             "and schemes, and should not treat a user-supplied URL as a "
             "trusted destination."
+        )
+    elif missing_control == "safe file-type validation, content validation, storage isolation, or execution prevention":
+        explanation["missing_control"] = (
+            "Safe file handling controls may be missing. Uploads should be "
+            "checked against an allowlist, validated by content rather than "
+            "extension alone, stored outside executable web paths, and "
+            "blocked from running as code."
+        )
+    elif missing_control == "anti-CSRF protections such as unpredictable request tokens or equivalent request-intent validation":
+        explanation["missing_control"] = (
+            "Anti-CSRF protections may be missing. State-changing requests "
+            "should include unpredictable request tokens or equivalent "
+            "request-intent validation so a cross-site caller cannot reuse "
+            "the victim's session."
         )
     elif missing_control == "unknown":
         explanation["missing_control"] = (
@@ -837,6 +1277,12 @@ def explain_analysis(analysis):
             "trusted SQL. That breaks the trust boundary between untrusted "
             "request data and the database engine."
         )
+    elif broken_trust == "attacker-controlled input is trusted as part of executable SQL":
+        explanation["broken_trust"] = (
+            "The application may trust attacker-controlled input as part of "
+            "executable SQL. That breaks the trust boundary between untrusted "
+            "request data and the database query engine."
+        )
     elif broken_trust == "application renders attacker-controlled input":
         explanation["broken_trust"] = (
             "The application may be rendering attacker-controlled input in "
@@ -849,6 +1295,20 @@ def explain_analysis(analysis):
             "user and making requests on the user's behalf. That breaks "
             "the trust boundary between untrusted input and the server's "
             "outbound network access."
+        )
+    elif broken_trust == "server trusts user-supplied files, filenames, extensions, or content types as safe":
+        explanation["broken_trust"] = (
+            "The server may be trusting user-supplied files, filenames, "
+            "extensions, or content types as safe. That breaks the trust "
+            "boundary between untrusted upload content and the application's "
+            "storage or execution environment."
+        )
+    elif broken_trust == "application trusts that a request carrying valid session credentials was intentionally initiated by the authenticated user":
+        explanation["broken_trust"] = (
+            "The application may trust that a request carrying valid session "
+            "credentials was intentionally started by the authenticated user. "
+            "That breaks the trust boundary between ambient browser "
+            "credentials and proven user intent."
         )
     elif broken_trust == "unknown":
         explanation["broken_trust"] = (
