@@ -1,8 +1,6 @@
-from engine import analyze, generate_output, normalize_input
+from engine import analyze_scenario, render_structured_report
 
 user_input = input("Enter a security scenario: ")
 
-normalized = normalize_input(user_input)
-analysis = analyze(normalized)
-
-generate_output(user_input, analysis)
+report = analyze_scenario(user_input)
+render_structured_report(report)

@@ -1106,14 +1106,88 @@ def evidence_snapshot(data):
 
 def analyze(data):
     matches = collect_matching_issues(data)
-    result = select_primary_issue(matches)
+    findings = []
+    for match in matches:
+        finding = dict(match)
+        finding["confidence"] = confidence_from_evidence(data, finding)
+        findings.append(finding)
+
+    result = select_primary_issue(findings)
     if result is None:
         result = unknown_issue(data["action"], data.get("targets", []))
+        result["findings"] = []
+        result["primary_issue"] = result["issue_type"]
+    else:
+        result = dict(result)
+        result["findings"] = findings
+        result["primary_issue"] = result["issue_type"]
 
     result["evidence"] = evidence_snapshot(data)
-    result["confidence"] = confidence_from_evidence(data, result)
+    result["confidence"] = result.get(
+        "confidence", confidence_from_evidence(data, result)
+    )
     return result
 
+
+def build_structured_finding(finding, evidence):
+    explanation = explain_analysis(finding)
+    issue_type = finding["issue_type"]
+    return {
+        "issue_type": issue_type,
+        "display_name": ISSUE_DISPLAY_NAMES.get(issue_type, "Unknown"),
+        "confidence": finding.get("confidence", "low"),
+        "evidence": dict(evidence),
+        "missing_control": explanation["missing_control"],
+        "broken_trust": explanation["broken_trust"],
+        "assumption": explanation["assumption"],
+        "impact": explanation["impact"],
+        "recommendations": list(RECOMMENDATIONS.get(issue_type, [])),
+        "follow_up_questions": list(FOLLOW_UP_QUESTIONS.get(issue_type, [])),
+    }
+
+
+def build_structured_result(user_input, analysis):
+    evidence = dict(analysis.get("evidence", {}))
+    structured_findings = [
+        build_structured_finding(finding, evidence)
+        for finding in analysis.get("findings", [])
+    ]
+    vulnerability_indicated = len(structured_findings) > 0
+    primary_issue = analysis.get("primary_issue")
+    if not vulnerability_indicated or primary_issue == "unknown":
+        primary_issue = None
+
+    summary_explanation = explain_analysis(analysis)
+    return {
+        "scenario": user_input,
+        "evidence": evidence,
+        "findings": structured_findings,
+        "primary_issue": primary_issue,
+        "vulnerability_indicated": vulnerability_indicated,
+        "confidence": analysis.get("confidence", "low"),
+        "summary": {
+            "title": assessment_title(analysis),
+            "scope_note": assessment_scope_note(analysis),
+            "missing_control": summary_explanation["missing_control"],
+            "broken_trust": summary_explanation["broken_trust"],
+            "assumption": summary_explanation["assumption"],
+            "impact": summary_explanation["impact"],
+            "recommendations": list(
+                RECOMMENDATIONS.get(analysis.get("issue_type"), [])
+            ),
+            "follow_up_questions": list(
+                FOLLOW_UP_QUESTIONS.get(analysis.get("issue_type"), [])
+            ),
+            "verification_steps": (
+                verification_steps(analysis) if not vulnerability_indicated else []
+            ),
+        },
+    }
+
+
+def analyze_scenario(user_input):
+    analysis = analyze(normalize_input(user_input))
+    return build_structured_result(user_input, analysis)
 
 REPORT_RULE = "=" * 64
 EVIDENCE_LABEL_WIDTH = 24
@@ -1440,11 +1514,35 @@ def verification_steps(analysis):
     return INSUFFICIENT_INFORMATION_VERIFICATION
 
 
-def generate_output(user_input, analysis):
-    explanation = explain_analysis(analysis)
-    confidence = analysis.get("confidence", "low")
-    evidence = analysis.get("evidence", {})
-    vulnerability_indicated = analysis.get("vulnerability_indicated")
+def print_finding_details(finding, number):
+    print_section(f"Finding {number} — {finding['display_name']}")
+    print_labeled("Confidence:", title_case_label(finding["confidence"]))
+    print()
+    print("Evidence used:")
+    print(f"  {describe_evidence(finding.get('evidence', {}))}")
+    print()
+    print("Missing control:")
+    print(f"  {finding['missing_control']}")
+    print()
+    print("Broken trust:")
+    print(f"  {finding['broken_trust']}")
+    print()
+    print("System assumption:")
+    print(f"  {finding['assumption']}")
+    print()
+    print("Impact:")
+    print(f"  {finding['impact']}")
+    print()
+    print("Recommended remediation:")
+    print_bullets(finding.get("recommendations", []))
+
+
+def render_structured_report(report):
+    evidence = report.get("evidence", {})
+    findings = report.get("findings", [])
+    summary = report.get("summary", {})
+    confidence = report.get("confidence", "low")
+    vulnerability_indicated = report.get("vulnerability_indicated")
 
     print()
     print(REPORT_RULE)
@@ -1452,7 +1550,7 @@ def generate_output(user_input, analysis):
     print(REPORT_RULE)
 
     print_section("Scenario")
-    print(user_input)
+    print(report.get("scenario", ""))
 
     print_section("Evidence Collected")
     print_labeled("Action:", title_case_label(evidence.get("action")))
@@ -1462,34 +1560,50 @@ def generate_output(user_input, analysis):
     print_labeled("Confidence:", title_case_label(confidence))
 
     print_section("Assessment")
-    print(assessment_title(analysis))
+    print(summary.get("title", ""))
     print()
-    print(assessment_scope_note(analysis))
+    print(summary.get("scope_note", ""))
+
+    if len(findings) > 1:
+        print_section("Findings")
+        for number, finding in enumerate(findings, start=1):
+            print(
+                f"{number}. {finding['display_name']} — "
+                f"{title_case_label(finding['confidence'])}"
+            )
+
+        for number, finding in enumerate(findings, start=1):
+            print_finding_details(finding, number)
+
+        print()
+        print(REPORT_RULE)
+        print()
+        return
 
     print_section("Why This Conclusion")
     print("Evidence used:")
     print(f"  {describe_evidence(evidence)}")
     print()
     print("Missing control:")
-    print(f"  {explanation['missing_control']}")
+    print(f"  {summary.get('missing_control', '')}")
     print()
     print("Broken trust:")
-    print(f"  {explanation['broken_trust']}")
+    print(f"  {summary.get('broken_trust', '')}")
     print()
     print("System assumption:")
-    print(f"  {explanation['assumption']}")
+    print(f"  {summary.get('assumption', '')}")
 
     print_section("Impact")
-    print(explanation["impact"])
+    print(summary.get("impact", ""))
 
     if vulnerability_indicated:
         print_section("Recommended Remediation")
-        print_bullets(RECOMMENDATIONS.get(analysis["issue_type"], []))
+        print_bullets(summary.get("recommendations", []))
     else:
         print_section("Suggested Verification")
-        print_bullets(verification_steps(analysis))
+        print_bullets(summary.get("verification_steps", []))
 
-    questions = FOLLOW_UP_QUESTIONS.get(analysis["issue_type"], [])
+    questions = summary.get("follow_up_questions", [])
     if confidence != "high" and questions:
         print_section("Follow-up questions:")
         print_bullets(questions)
@@ -1497,3 +1611,8 @@ def generate_output(user_input, analysis):
     print()
     print(REPORT_RULE)
     print()
+
+
+def generate_output(user_input, analysis):
+    report = build_structured_result(user_input, analysis)
+    render_structured_report(report)
