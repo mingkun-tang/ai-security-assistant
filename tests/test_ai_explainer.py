@@ -1,12 +1,12 @@
 import copy
 import json
 
-from ai.explainer import (
+from app.ai.explainer import (
     build_explanation_request,
     explain_structured_result,
     validate_ai_output,
 )
-from engine import analyze_scenario
+from app.engine import analyze_scenario
 
 
 class FakeProvider:

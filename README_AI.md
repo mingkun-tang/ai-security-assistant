@@ -30,7 +30,7 @@ Load the variables in your shell before running the CLI. For example:
 set -a
 source .env
 set +a
-uv run python app/main.py
+uv run ai-security-assistant analyze
 ```
 
 Do not commit `.env` files or API keys. `.env` is ignored by Git and

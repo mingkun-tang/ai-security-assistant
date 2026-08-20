@@ -1,5 +1,5 @@
-from engine import analyze, generate_output, normalize_input
-from knowledge import FOLLOW_UP_QUESTIONS, RECOMMENDATIONS
+from app.engine import analyze, generate_output, normalize_input
+from app.knowledge import FOLLOW_UP_QUESTIONS, RECOMMENDATIONS
 
 
 def analyze_text(text):

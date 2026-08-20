@@ -1,4 +1,4 @@
-from engine import normalize_input, term_in_text
+from app.engine import normalize_input, term_in_text
 
 
 def test_other_user_and_self_reference_signals():

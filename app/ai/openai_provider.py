@@ -1,7 +1,7 @@
 from openai import OpenAI
 
-from ai.prompts import SYSTEM_PROMPT, build_prompt
-from ai.provider import AIExplanationRequest, AIExplanationResponse
+from app.ai.prompts import SYSTEM_PROMPT, build_prompt
+from app.ai.provider import AIExplanationRequest, AIExplanationResponse
 
 
 DEFAULT_MODEL = "gpt-4o-mini"

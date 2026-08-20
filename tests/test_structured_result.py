@@ -1,4 +1,4 @@
-from engine import analyze, analyze_scenario, build_structured_result, normalize_input
+from app.engine import analyze, analyze_scenario, build_structured_result, normalize_input
 
 
 def structured(text):

@@ -1,11 +1,6 @@
-from ai.explainer import explain_structured_result, render_ai_explanation
-from ai.provider import get_provider
-from engine import analyze_scenario, render_structured_report
+"""Legacy module entry; prefer `ai-security-assistant` or `python -m app`."""
 
-user_input = input("Enter a security scenario: ")
+from app.cli import run
 
-report = analyze_scenario(user_input)
-render_structured_report(report)
-
-ai_explanation = explain_structured_result(report, get_provider())
-render_ai_explanation(ai_explanation)
+if __name__ == "__main__":
+    run()

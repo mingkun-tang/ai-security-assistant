@@ -1,7 +1,7 @@
 """Optional, provider-neutral AI explanation layer."""
 
-from ai.explainer import explain_structured_result, render_ai_explanation
-from ai.provider import (
+from app.ai.explainer import explain_structured_result, render_ai_explanation
+from app.ai.provider import (
     AIExplanationRequest,
     AIExplanationResponse,
     NullProvider,

@@ -1,6 +1,6 @@
 import re
 
-from knowledge import FOLLOW_UP_QUESTIONS, RECOMMENDATIONS
+from app.knowledge import FOLLOW_UP_QUESTIONS, RECOMMENDATIONS
 
 READ_WORDS = ["read", "view", "see", "access", "open", "look", "check"]
 MODIFY_WORDS = [

@@ -1,8 +1,8 @@
 import json
 
-from ai.openai_provider import DEFAULT_MODEL, OpenAIProvider
-from ai.provider import NullProvider, get_provider
-from engine import analyze_scenario
+from app.ai.openai_provider import DEFAULT_MODEL, OpenAIProvider
+from app.ai.provider import NullProvider, get_provider
+from app.engine import analyze_scenario
 
 
 class FakeResponse:

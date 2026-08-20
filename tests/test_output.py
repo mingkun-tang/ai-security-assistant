@@ -1,5 +1,5 @@
-from engine import analyze, generate_output, normalize_input
-from knowledge import FOLLOW_UP_QUESTIONS
+from app.engine import analyze, generate_output, normalize_input
+from app.knowledge import FOLLOW_UP_QUESTIONS
 
 
 def run_output(capsys, text):

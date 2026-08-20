@@ -1,4 +1,4 @@
-from engine import analyze, normalize_input
+from app.engine import analyze, normalize_input
 
 
 def analyze_text(text):

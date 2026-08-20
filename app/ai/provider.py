@@ -32,7 +32,7 @@ def get_provider() -> Provider:
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
-        from ai.openai_provider import OpenAIProvider
+        from app.ai.openai_provider import OpenAIProvider
 
         return OpenAIProvider(
             api_key=api_key,
