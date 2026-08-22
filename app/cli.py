@@ -11,6 +11,8 @@ from app import __version__
 from app.ai.explainer import explain_structured_result, render_ai_explanation
 from app.ai.provider import get_provider
 from app.engine import analyze_scenario, render_structured_report
+from app.project_scan import scan_project
+from app.project_report import format_project_report, render_project_report
 from app.source_analysis import analyze_source
 from app.source_report import render_source_report
 
@@ -60,6 +62,27 @@ def build_parser() -> argparse.ArgumentParser:
             "Does not include AI explanation."
         ),
     )
+
+    scan_parser = subparsers.add_parser(
+        "scan",
+        help="Scan a Python project directory",
+    )
+    scan_parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Path to a project directory (default: current directory)",
+    )
+    scan_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the scan result as machine-readable JSON only.",
+    )
+    scan_parser.add_argument(
+        "--output",
+        metavar="FILE",
+        help="Write the scan report to a file.",
+    )
     return parser
 
 
@@ -100,6 +123,37 @@ def run_analyze_file(path: str, *, as_json: bool) -> int:
     return 0
 
 
+def run_scan(path: str, *, as_json: bool, output: str | None) -> int:
+    project_path = Path(path)
+    if not project_path.exists():
+        print(f"error: project path not found: {path}", file=sys.stderr)
+        return 1
+    if not project_path.is_dir():
+        print(f"error: project path is not a directory: {path}", file=sys.stderr)
+        return 1
+
+    report = scan_project(project_path)
+
+    if output:
+        destination = Path(output)
+        if as_json:
+            destination.write_text(
+                json.dumps(report, indent=2, sort_keys=False) + "\n",
+                encoding="utf-8",
+            )
+        else:
+            destination.write_text(format_project_report(report), encoding="utf-8")
+
+    if as_json:
+        if not output:
+            print(json.dumps(report, indent=2, sort_keys=False))
+        return 0
+
+    if not output:
+        render_project_report(report)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -113,6 +167,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "analyze-file":
         return run_analyze_file(args.path, as_json=bool(args.json))
+
+    if args.command == "scan":
+        return run_scan(
+            args.path,
+            as_json=bool(args.json),
+            output=args.output,
+        )
 
     parser.print_help()
     return 0
