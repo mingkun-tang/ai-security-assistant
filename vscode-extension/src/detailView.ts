@@ -2,7 +2,8 @@
 
 import type { FindingDetailModel, FixSuggestion, SecurityFinding } from "./types";
 import { formatEvidenceFlow } from "./evidenceFlow";
-import { FIX_SAFETY_LABEL, formatFixSuggestionSection } from "./fixSuggestion";
+import { formatFixSuggestionSection } from "./fixSuggestion";
+import { APPLY_SAFETY_LABEL } from "./applyFix";
 
 export const AI_EXPLANATION_DISCLAIMER =
   "AI explains this finding but does not determine or classify it. The deterministic engine remains the source of truth.";
@@ -57,7 +58,7 @@ export function buildFindingDetailModel(
     fixSuggestion: state.fixSuggestion,
     fixStatus: state.fixStatus || "idle",
     fixMessage: state.fixMessage,
-    fixSafetyLabel: FIX_SAFETY_LABEL,
+    fixSafetyLabel: APPLY_SAFETY_LABEL,
   };
 }
 
@@ -210,7 +211,9 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
         </div>
       </div>
       <button id="show-diff">Open Diff Preview</button>
-      <p class="disclaimer">Review only — this extension does not modify your source files.</p>
+      <button id="apply-fix">Apply Suggested Fix</button>
+      <p class="disclaimer">${escape(model.fixSafetyLabel)}</p>
+      <p class="disclaimer">This extension only edits the exact suggested range after you confirm. It does not claim the result is secure.</p>
     `;
   }
 
@@ -341,6 +344,12 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
     if (showDiff) {
       showDiff.addEventListener('click', () => {
         vscode.postMessage({ command: 'showDiff' });
+      });
+    }
+    const applyFix = document.getElementById('apply-fix');
+    if (applyFix) {
+      applyFix.addEventListener('click', () => {
+        vscode.postMessage({ command: 'applyFix' });
       });
     }
   </script>

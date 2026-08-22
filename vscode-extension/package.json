@@ -44,6 +44,10 @@
       {
         "command": "aiSecurityAssistant.generateFixSuggestion",
         "title": "AI Security Assistant: Generate Fix Suggestion"
+      },
+      {
+        "command": "aiSecurityAssistant.applySuggestedFix",
+        "title": "AI Security Assistant: Apply Suggested Fix"
       }
     ],
     "viewsContainers": {

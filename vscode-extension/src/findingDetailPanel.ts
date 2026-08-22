@@ -17,6 +17,7 @@ export class FindingDetailPanel {
   private finding: SecurityFinding;
   private state: DetailViewState = { fixStatus: "idle" };
   private generateFixHandler?: (finding: SecurityFinding) => Promise<void>;
+  private applyFixHandler?: (finding: SecurityFinding) => Promise<void>;
 
   private constructor(panel: vscode.WebviewPanel, finding: SecurityFinding) {
     this.panel = panel;
@@ -35,6 +36,12 @@ export class FindingDetailPanel {
       }
       if (message.command === "showDiff") {
         await this.showDiffPreview();
+        return;
+      }
+      if (message.command === "applyFix") {
+        if (this.applyFixHandler) {
+          await this.applyFixHandler(this.finding);
+        }
       }
     });
 
@@ -49,15 +56,22 @@ export class FindingDetailPanel {
     finding: SecurityFinding,
     options?: {
       generateFixHandler?: (finding: SecurityFinding) => Promise<void>;
+      applyFixHandler?: (finding: SecurityFinding) => Promise<void>;
+      preserveState?: boolean;
     },
   ): FindingDetailPanel {
     const column = vscode.ViewColumn.Beside;
 
     if (FindingDetailPanel.current) {
       FindingDetailPanel.current.finding = finding;
-      FindingDetailPanel.current.state = { fixStatus: "idle" };
+      if (!options?.preserveState) {
+        FindingDetailPanel.current.state = { fixStatus: "idle" };
+      }
       if (options?.generateFixHandler) {
         FindingDetailPanel.current.generateFixHandler = options.generateFixHandler;
+      }
+      if (options?.applyFixHandler) {
+        FindingDetailPanel.current.applyFixHandler = options.applyFixHandler;
       }
       FindingDetailPanel.current.render();
       FindingDetailPanel.current.panel.reveal(column, true);
@@ -78,6 +92,9 @@ export class FindingDetailPanel {
     if (options?.generateFixHandler) {
       FindingDetailPanel.current.generateFixHandler = options.generateFixHandler;
     }
+    if (options?.applyFixHandler) {
+      FindingDetailPanel.current.applyFixHandler = options.applyFixHandler;
+    }
     return FindingDetailPanel.current;
   }
 
@@ -87,6 +104,10 @@ export class FindingDetailPanel {
 
   getFinding(): SecurityFinding {
     return this.finding;
+  }
+
+  getState(): DetailViewState {
+    return this.state;
   }
 
   setLoading(): void {
@@ -122,7 +143,17 @@ export class FindingDetailPanel {
     this.render();
   }
 
-  private async showDiffPreview(): Promise<void> {
+  clearSuggestion(message?: string): void {
+    this.state = {
+      fixStatus: message ? "unavailable" : "idle",
+      fixSuggestion: undefined,
+      fixMessage: message,
+      sourceSnippet: this.state.sourceSnippet,
+    };
+    this.render();
+  }
+
+  async showDiffPreview(): Promise<void> {
     const suggestion = this.state.fixSuggestion;
     if (!suggestion) {
       return;

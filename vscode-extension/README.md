@@ -100,7 +100,8 @@ Diagnostic text includes issue name, confidence, concise explanation, and the fi
 ### Detail command
 
 - **AI Security Assistant: View Finding Details** — opens the polished detail panel (also invoked when clicking a sidebar finding).
-- **AI Security Assistant: Generate Fix Suggestion** — asks the local CLI for an optional AI fix suggestion (review only; never auto-applied).
+- **AI Security Assistant: Generate Fix Suggestion** — asks the local CLI for an optional AI fix suggestion (review only until you explicitly apply).
+- **AI Security Assistant: Apply Suggested Fix** — opens a diff, asks for confirmation, then replaces only the matched snippet via VS Code edits (undoable). Rescans afterward.
 
 AI fix suggestions require the same optional API key as explanations (`OPENAI_API_KEY`). Without a key, the UI shows “AI fix suggestion unavailable.” and deterministic findings continue working.
 
