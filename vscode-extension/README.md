@@ -90,11 +90,16 @@ Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 
 ## How findings appear
 
-1. **Problems panel** — each finding is a diagnostic on the source line (Error/Warning/Info by confidence).
-2. **AI Security Assistant sidebar** — findings grouped by file; click a finding to jump to the line.
-3. **Status bar** — `Security: N findings`; click to focus the sidebar.
+1. **Problems panel** — each finding is a diagnostic on the source line (Error/Warning/Info by confidence). Hover shows Why / Fix and a prompt to open full details.
+2. **AI Security Assistant sidebar** — findings grouped by file with severity icons; click a finding to jump to the line and open the detail view.
+3. **Finding detail view** — issue, confidence, evidence flow, why/impact, recommended fix, and optional AI explanation (never overwrites deterministic fields).
+4. **Status bar** — `Security: N findings`; click to focus the sidebar.
 
 Diagnostic text includes issue name, confidence, concise explanation, and the first remediation tip when present.
+
+### Detail command
+
+- **AI Security Assistant: View Finding Details** — opens the polished detail panel (also invoked when clicking a sidebar finding).
 
 ## Tests
 

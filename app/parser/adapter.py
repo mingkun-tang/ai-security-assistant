@@ -226,34 +226,44 @@ def facts_for_issue(issue_type: str, evidence: EvidenceDocument) -> list[dict]:
     """Return serialized facts that support a given engine issue type."""
 
     locations = {loc.id: loc for loc in evidence.locations}
-    matched: list[dict] = []
+    facts_by_id = {fact.id: fact for fact in evidence.facts}
+    matched_facts: list[Fact] = []
 
     for fact in evidence.facts:
         if issue_type == "sql_injection" and fact.kind == "database_query":
             construction = fact.attrs.get("construction")
-            if construction in UNSAFE_QUERY_CONSTRUCTION or (
-                construction in UNSAFE_QUERY_CONSTRUCTION
-                and fact.attrs.get("uses_input_source_ids")
-            ):
-                matched.append(serialize_fact(fact, locations))
-            elif construction in UNSAFE_QUERY_CONSTRUCTION:
-                matched.append(serialize_fact(fact, locations))
+            if construction in UNSAFE_QUERY_CONSTRUCTION:
+                matched_facts.append(fact)
         elif issue_type == "xss" and fact.kind == "rendered_output":
             if fact.attrs.get("uses_input_source_ids") or fact.attrs.get("escaping_observed") == "no":
-                matched.append(serialize_fact(fact, locations))
+                matched_facts.append(fact)
         elif issue_type == "ssrf" and fact.kind == "network_request":
             if fact.attrs.get("destination_kind") != "literal" or fact.attrs.get(
                 "uses_input_source_ids"
             ):
-                matched.append(serialize_fact(fact, locations))
+                matched_facts.append(fact)
         elif issue_type == "file_upload" and fact.kind == "file_upload":
             if fact.attrs.get("accepts_upload") or fact.attrs.get("saved"):
-                matched.append(serialize_fact(fact, locations))
+                matched_facts.append(fact)
         elif issue_type in {"idor", "modify_data", "delete_action", "privilege_escalation"}:
             if fact.kind in {"data_access", "authorization_check", "input_source"}:
-                matched.append(serialize_fact(fact, locations))
+                matched_facts.append(fact)
 
-    if not matched:
-        for fact in evidence.facts:
-            matched.append(serialize_fact(fact, locations))
-    return matched
+    if not matched_facts:
+        matched_facts = list(evidence.facts)
+
+    linked_inputs: list[Fact] = []
+    seen_ids: set[str] = set()
+    for fact in matched_facts:
+        for input_id in fact.attrs.get("uses_input_source_ids") or []:
+            if input_id in seen_ids:
+                continue
+            source = facts_by_id.get(input_id)
+            if source is not None and source.kind == "input_source":
+                linked_inputs.append(source)
+                seen_ids.add(input_id)
+
+    ordered = linked_inputs + [
+        fact for fact in matched_facts if fact.id not in seen_ids
+    ]
+    return [serialize_fact(fact, locations) for fact in ordered]

@@ -3,9 +3,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  confidenceIcon,
   confidenceToSeverityRank,
+  findFindingById,
   formatDiagnosticMessage,
   formatFindingLabel,
+  formatSidebarFindingLabel,
   groupFindingsByFile,
   parseAnalyzeFileJson,
   parseJsonText,
@@ -21,13 +24,30 @@ const ANALYZE_FILE_SAMPLE = {
       confidence: "high",
       missing_control:
         "The application may be constructing SQL queries using user-controlled input.",
+      impact: "Attackers may read or modify database records.",
       recommendations: [
         "Use parameterized or prepared statements for all database access",
         "Never concatenate user input into SQL strings",
       ],
       evidence_locations: [
         {
+          id: "F1",
+          kind: "input_source",
+          attrs: { channel: "query", name: "id" },
+          location: {
+            path: "/tmp/users.py",
+            line: 4,
+            column: 14,
+            snippet: 'request.args.get("id")',
+          },
+        },
+        {
+          id: "F2",
           kind: "database_query",
+          attrs: {
+            construction: "concat",
+            uses_input_source_ids: ["F1"],
+          },
           location: {
             path: "/tmp/users.py",
             line: 12,
@@ -54,11 +74,31 @@ const SCAN_SAMPLE = {
       snippet: "requests.get(url)",
       missing_control: "User-controlled URL reaches a server-side request.",
       recommendations: ["Validate and allowlist outbound destinations"],
+      evidence_locations: [
+        {
+          kind: "input_source",
+          attrs: { channel: "query", name: "url" },
+          location: {
+            path: "./app/api/fetch.py",
+            line: 5,
+            snippet: 'request.args.get("url")',
+          },
+        },
+        {
+          kind: "network_request",
+          attrs: { destination_kind: "from_input" },
+          location: {
+            path: "./app/api/fetch.py",
+            line: 6,
+            snippet: "requests.get(url)",
+          },
+        },
+      ],
     },
     {
       issue_type: "sql_injection",
       display_name: "SQL Injection",
-      confidence: "high",
+      confidence: "medium",
       file: "./app/routes/users.py",
       line: 5,
       column: 4,
@@ -80,6 +120,7 @@ describe("parseAnalyzeFileJson", () => {
     assert.equal(finding.column, 4);
     assert.match(finding.explanation, /SQL queries/i);
     assert.match(finding.remediation ?? "", /parameterized/i);
+    assert.equal(finding.evidenceSteps.length, 2);
   });
 
   it("rejects non-object payloads", () => {
@@ -114,7 +155,17 @@ describe("formatting and grouping", () => {
     assert.equal(formatFindingLabel(finding), "SQL Injection — High");
     const message = formatDiagnosticMessage(finding);
     assert.match(message, /SQL Injection — High/);
+    assert.match(message, /Why:/);
+    assert.match(message, /Fix:/);
+    assert.match(message, /View Security Finding/);
     assert.match(message, /parameterized/i);
+  });
+
+  it("formats sidebar labels with severity icons", () => {
+    const findings = parseScanJson(SCAN_SAMPLE).findings;
+    assert.match(formatSidebarFindingLabel(findings[0]), /^🔴 /);
+    assert.match(formatSidebarFindingLabel(findings[1]), /^🟠 /);
+    assert.equal(confidenceIcon("low"), "🔵");
   });
 
   it("groups findings by file", () => {
@@ -128,5 +179,12 @@ describe("formatting and grouping", () => {
     assert.equal(confidenceToSeverityRank("high"), 3);
     assert.equal(confidenceToSeverityRank("medium"), 2);
     assert.equal(confidenceToSeverityRank("low"), 1);
+  });
+
+  it("resolves findings by id for navigation", () => {
+    const findings = parseAnalyzeFileJson(ANALYZE_FILE_SAMPLE).findings;
+    const found = findFindingById(findings, findings[0].id);
+    assert.equal(found?.displayName, "SQL Injection");
+    assert.equal(findFindingById(findings, "missing"), undefined);
   });
 });

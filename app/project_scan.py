@@ -121,21 +121,38 @@ def _normalize_finding(finding: dict, file_path: Path, project_root: Path) -> di
         "snippet": location.get("snippet"),
         "missing_control": finding.get("missing_control"),
         "impact": finding.get("impact"),
+        "broken_trust": finding.get("broken_trust"),
         "recommendations": list(finding.get("recommendations") or []),
         "evidence_locations": finding.get("evidence_locations", []),
     }
 
 
 def _primary_location(finding: dict, file_path: Path, project_root: Path) -> dict:
-    for item in finding.get("evidence_locations", []):
+    locations = finding.get("evidence_locations", [])
+
+    def from_item(item: dict) -> dict | None:
         loc = item.get("location") or {}
-        if loc.get("path"):
-            return {
-                "file": _display_path(Path(loc["path"]), project_root),
-                "line": loc.get("line"),
-                "column": loc.get("column"),
-                "snippet": loc.get("snippet"),
-            }
+        if not loc.get("path"):
+            return None
+        return {
+            "file": _display_path(Path(loc["path"]), project_root),
+            "line": loc.get("line"),
+            "column": loc.get("column"),
+            "snippet": loc.get("snippet"),
+        }
+
+    # Prefer sink / non-input evidence for the caret location.
+    for item in locations:
+        if item.get("kind") == "input_source":
+            continue
+        mapped = from_item(item)
+        if mapped is not None:
+            return mapped
+
+    for item in locations:
+        mapped = from_item(item)
+        if mapped is not None:
+            return mapped
 
     return {
         "file": _display_path(file_path, project_root),

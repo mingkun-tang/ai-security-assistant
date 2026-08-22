@@ -4,7 +4,9 @@ import * as vscode from "vscode";
 import { CliError, analyzeFileJson, scanProjectJson } from "./cli";
 import { getExecutablePath } from "./config";
 import { applyDiagnostics } from "./diagnostics";
+import { FindingDetailPanel } from "./findingDetailPanel";
 import {
+  findFindingById,
   parseAnalyzeFileJson,
   parseJsonText,
   parseScanJson,
@@ -15,6 +17,8 @@ import type { FindingsTreeProvider } from "./treeView";
 import type { SecurityFinding } from "./types";
 
 export class FindingsController {
+  private findings: SecurityFinding[] = [];
+
   constructor(
     private readonly diagnostics: vscode.DiagnosticCollection,
     private readonly tree: FindingsTreeProvider,
@@ -22,18 +26,24 @@ export class FindingsController {
   ) {}
 
   clear(): void {
+    this.findings = [];
     this.diagnostics.clear();
     this.tree.setFindings([]);
     this.statusBar.setCount(0);
   }
 
   setFindings(findings: SecurityFinding[]): void {
+    this.findings = findings;
     const folder = vscode.workspace.workspaceFolders?.[0];
     applyDiagnostics(this.diagnostics, findings, (file) =>
       resolveFindingUri(file, folder),
     );
     this.tree.setFindings(findings);
     this.statusBar.setCount(findings.length);
+  }
+
+  getFindings(): SecurityFinding[] {
+    return this.findings;
   }
 
   async scanCurrentFile(): Promise<void> {
@@ -148,6 +158,20 @@ export class FindingsController {
   }
 
   async openFinding(finding: SecurityFinding): Promise<void> {
+    await this.viewFindingDetails(finding);
+  }
+
+  async viewFindingDetails(finding?: SecurityFinding): Promise<void> {
+    const selected = finding ?? (await this.pickFinding());
+    if (!selected) {
+      return;
+    }
+
+    FindingDetailPanel.show(selected);
+    await this.revealFindingInEditor(selected);
+  }
+
+  async revealFindingInEditor(finding: SecurityFinding): Promise<void> {
     const folder = vscode.workspace.workspaceFolders?.[0];
     const uri = resolveFindingUri(finding.file, folder);
     if (!uri) {
@@ -163,11 +187,41 @@ export class FindingsController {
     const editor = await vscode.window.showTextDocument(document, {
       preview: true,
       selection: new vscode.Range(line, column, line, column),
+      viewColumn: vscode.ViewColumn.One,
     });
     editor.revealRange(
       new vscode.Range(line, 0, line, 0),
       vscode.TextEditorRevealType.InCenter,
     );
+  }
+
+  private async pickFinding(): Promise<SecurityFinding | undefined> {
+    if (!this.findings.length) {
+      void vscode.window.showInformationMessage(
+        "No security findings to view. Run a scan first.",
+      );
+      return undefined;
+    }
+
+    const picked = await vscode.window.showQuickPick(
+      this.findings.map((finding) => ({
+        label: `${finding.displayName} — ${finding.confidence}`,
+        description:
+          finding.line != null
+            ? `${finding.file}:${finding.line}`
+            : finding.file,
+        finding,
+      })),
+      { placeHolder: "Select a security finding" },
+    );
+    return picked?.finding;
+  }
+
+  resolveFinding(idOrFinding: string | SecurityFinding): SecurityFinding | undefined {
+    if (typeof idOrFinding !== "string") {
+      return idOrFinding;
+    }
+    return findFindingById(this.findings, idOrFinding);
   }
 
   private handleError(error: unknown): void {

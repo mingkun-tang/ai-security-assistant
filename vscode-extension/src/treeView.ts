@@ -2,7 +2,11 @@
 
 import * as path from "path";
 import * as vscode from "vscode";
-import { formatFindingLabel, groupFindingsByFile } from "./findings";
+import {
+  formatFindingLabel,
+  formatSidebarFindingLabel,
+  groupFindingsByFile,
+} from "./findings";
 import type { SecurityFinding } from "./types";
 
 export type FindingsTreeNode = FileNode | FindingNode;
@@ -22,13 +26,15 @@ export class FileNode extends vscode.TreeItem {
 
 export class FindingNode extends vscode.TreeItem {
   constructor(readonly finding: SecurityFinding) {
-    super(formatFindingLabel(finding), vscode.TreeItemCollapsibleState.None);
+    super(
+      formatSidebarFindingLabel(finding),
+      vscode.TreeItemCollapsibleState.None,
+    );
     this.contextValue = "aiSecurityFinding";
     this.tooltip = [
       formatFindingLabel(finding),
       finding.explanation,
-      finding.remediation,
-      finding.aiExplanation ? `AI: ${finding.aiExplanation}` : undefined,
+      finding.remediation ? `Fix: ${finding.remediation}` : undefined,
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -41,8 +47,8 @@ export class FindingNode extends vscode.TreeItem {
           : "info",
     );
     this.command = {
-      command: "aiSecurityAssistant.openFinding",
-      title: "Open Finding",
+      command: "aiSecurityAssistant.viewFindingDetails",
+      title: "View Finding Details",
       arguments: [finding],
     };
   }

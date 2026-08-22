@@ -15,7 +15,8 @@
     "onLanguage:python",
     "onCommand:aiSecurityAssistant.scanCurrentFile",
     "onCommand:aiSecurityAssistant.scanWorkspace",
-    "onCommand:aiSecurityAssistant.clearFindings"
+    "onCommand:aiSecurityAssistant.clearFindings",
+    "onCommand:aiSecurityAssistant.viewFindingDetails"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -35,6 +36,10 @@
       {
         "command": "aiSecurityAssistant.focusFindings",
         "title": "AI Security Assistant: Focus Findings"
+      },
+      {
+        "command": "aiSecurityAssistant.viewFindingDetails",
+        "title": "AI Security Assistant: View Finding Details"
       }
     ],
     "viewsContainers": {
