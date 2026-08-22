@@ -16,6 +16,7 @@ from app.project_report import format_project_report, render_project_report
 from app.source_analysis import analyze_source
 from app.source_report import render_source_report
 from app.fix_suggestion import suggest_fix_for_file
+from app.reporting.service import generate_project_report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -108,6 +109,38 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Print the machine-readable fix-suggestion payload as JSON.",
+    )
+
+    report_parser = subparsers.add_parser(
+        "report",
+        help="Generate an HTML or Markdown security report for a project",
+    )
+    report_parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Path to a project directory (default: current directory)",
+    )
+    format_group = report_parser.add_mutually_exclusive_group()
+    format_group.add_argument(
+        "--html",
+        action="store_true",
+        help="Render an HTML report (default when --output ends with .html)",
+    )
+    format_group.add_argument(
+        "--markdown",
+        action="store_true",
+        help="Render a Markdown report (default)",
+    )
+    report_parser.add_argument(
+        "--output",
+        metavar="FILE",
+        help="Write the report to a file instead of printing to the terminal",
+    )
+    report_parser.add_argument(
+        "--no-ai-summary",
+        action="store_true",
+        help="Skip the optional AI executive summary section",
     )
     return parser
 
@@ -230,6 +263,49 @@ def run_suggest_fix(
     return 0
 
 
+def _resolve_report_format(*, html: bool, markdown: bool, output: str | None) -> str:
+    if html:
+        return "html"
+    if markdown:
+        return "markdown"
+    if output and str(output).lower().endswith((".html", ".htm")):
+        return "html"
+    return "markdown"
+
+
+def run_report(
+    path: str,
+    *,
+    html: bool,
+    markdown: bool,
+    output: str | None,
+    no_ai_summary: bool,
+) -> int:
+    project_path = Path(path)
+    if not project_path.exists():
+        print(f"error: project path not found: {path}", file=sys.stderr)
+        return 1
+    if not project_path.is_dir():
+        print(f"error: project path is not a directory: {path}", file=sys.stderr)
+        return 1
+
+    fmt = _resolve_report_format(html=html, markdown=markdown, output=output)
+    _model, rendered = generate_project_report(
+        project_path,
+        format=fmt,
+        include_ai_summary=not no_ai_summary,
+    )
+
+    if output:
+        destination = Path(output)
+        destination.write_text(rendered, encoding="utf-8")
+        print(f"Wrote {fmt} report to {destination}", file=sys.stderr)
+        return 0
+
+    print(rendered)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -257,6 +333,15 @@ def main(argv: list[str] | None = None) -> int:
             issue_type=args.issue,
             line=args.line,
             as_json=bool(args.json),
+        )
+
+    if args.command == "report":
+        return run_report(
+            args.path,
+            html=bool(args.html),
+            markdown=bool(args.markdown),
+            output=args.output,
+            no_ai_summary=bool(args.no_ai_summary),
         )
 
     parser.print_help()
