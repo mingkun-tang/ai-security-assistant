@@ -62,4 +62,30 @@ export interface FindingDetailModel {
   aiExplanation?: string;
   showAiSection: boolean;
   aiDisclaimer: string;
+  sourceSnippet?: string;
+  fixSuggestion?: FixSuggestion;
+  fixStatus: "idle" | "loading" | "available" | "unavailable";
+  fixMessage?: string;
+  fixSafetyLabel: string;
+}
+
+export interface FixSuggestion {
+  summary: string;
+  replacementCode: string;
+  explanation: string;
+  warnings: string[];
+  disclaimer: string;
+  issueType: string;
+}
+
+export interface FixSuggestionPayload {
+  available: boolean;
+  message?: string | null;
+  suggestion: FixSuggestion | null;
+  sourceSnippet?: string;
+  finding?: {
+    issueType: string;
+    displayName?: string;
+    confidence?: string;
+  } | null;
 }

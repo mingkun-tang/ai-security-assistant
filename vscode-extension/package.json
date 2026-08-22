@@ -40,6 +40,10 @@
       {
         "command": "aiSecurityAssistant.viewFindingDetails",
         "title": "AI Security Assistant: View Finding Details"
+      },
+      {
+        "command": "aiSecurityAssistant.generateFixSuggestion",
+        "title": "AI Security Assistant: Generate Fix Suggestion"
       }
     ],
     "viewsContainers": {

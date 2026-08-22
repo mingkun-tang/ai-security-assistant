@@ -15,6 +15,7 @@ from app.project_scan import scan_project
 from app.project_report import format_project_report, render_project_report
 from app.source_analysis import analyze_source
 from app.source_report import render_source_report
+from app.fix_suggestion import suggest_fix_for_file
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -82,6 +83,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         metavar="FILE",
         help="Write the scan report to a file.",
+    )
+
+    suggest_parser = subparsers.add_parser(
+        "suggest-fix",
+        help="Request an optional AI fix suggestion for a deterministic finding",
+    )
+    suggest_parser.add_argument(
+        "path",
+        help="Path to a Python source file",
+    )
+    suggest_parser.add_argument(
+        "--issue",
+        required=True,
+        help="Deterministic issue_type to suggest a fix for (for example sql_injection)",
+    )
+    suggest_parser.add_argument(
+        "--line",
+        type=int,
+        default=None,
+        help="Optional 1-based line number of the finding",
+    )
+    suggest_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the machine-readable fix-suggestion payload as JSON.",
     )
     return parser
 
@@ -154,6 +180,56 @@ def run_scan(path: str, *, as_json: bool, output: str | None) -> int:
     return 0
 
 
+def run_suggest_fix(
+    path: str,
+    *,
+    issue_type: str,
+    line: int | None,
+    as_json: bool,
+) -> int:
+    file_path = Path(path)
+    if not file_path.is_file():
+        print(f"error: file not found: {path}", file=sys.stderr)
+        return 1
+
+    payload = suggest_fix_for_file(
+        file_path,
+        issue_type=issue_type,
+        line=line,
+    )
+
+    if as_json:
+        print(json.dumps(payload, indent=2, sort_keys=False))
+        return 0
+
+    if not payload.get("available"):
+        print(payload.get("message") or "AI fix suggestion unavailable.")
+        return 0
+
+    suggestion = payload["suggestion"]
+    print()
+    print("AI Fix Suggestion")
+    print("-----------------")
+    print(payload.get("disclaimer") or "")
+    print()
+    print(suggestion.get("summary", ""))
+    print()
+    print("Suggested replacement:")
+    print()
+    print(suggestion.get("replacement_code", ""))
+    print()
+    print("Why:")
+    print(suggestion.get("explanation", ""))
+    warnings = suggestion.get("warnings") or []
+    if warnings:
+        print()
+        print("Warnings:")
+        for item in warnings:
+            print(f"- {item}")
+    print()
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -173,6 +249,14 @@ def main(argv: list[str] | None = None) -> int:
             args.path,
             as_json=bool(args.json),
             output=args.output,
+        )
+
+    if args.command == "suggest-fix":
+        return run_suggest_fix(
+            args.path,
+            issue_type=args.issue,
+            line=args.line,
+            as_json=bool(args.json),
         )
 
     parser.print_help()

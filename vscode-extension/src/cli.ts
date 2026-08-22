@@ -114,6 +114,31 @@ export async function scanProjectJson(
   return parseCliJson(result.stdout);
 }
 
+export async function suggestFixJson(
+  executable: string,
+  filePath: string,
+  issueType: string,
+  line: number | null | undefined,
+  options: { cwd?: string; timeoutMs?: number } = {},
+): Promise<unknown> {
+  const args = ["suggest-fix", filePath, "--issue", issueType, "--json"];
+  if (line != null) {
+    args.push("--line", String(line));
+  }
+  const result = await runCli(executable, args, {
+    cwd: options.cwd,
+    timeoutMs: options.timeoutMs ?? 90_000,
+  });
+  // Unavailable AI still returns exit 0 with available:false JSON.
+  if (result.code !== 0) {
+    throw new CliError(
+      `suggest-fix failed (exit ${result.code ?? "unknown"}).`,
+      { code: result.code, stderr: result.stderr },
+    );
+  }
+  return parseCliJson(result.stdout);
+}
+
 function parseCliJson(stdout: string): unknown {
   const text = stdout.trim();
   if (!text) {

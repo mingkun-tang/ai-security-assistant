@@ -55,6 +55,10 @@ export function activate(context: vscode.ExtensionContext): void {
       "aiSecurityAssistant.viewFindingDetails",
       (finding?: SecurityFinding) => controller.viewFindingDetails(finding),
     ),
+    vscode.commands.registerCommand(
+      "aiSecurityAssistant.generateFixSuggestion",
+      (finding?: SecurityFinding) => controller.generateFixSuggestion(finding),
+    ),
     vscode.workspace.onDidSaveTextDocument((document) => {
       if (!getScanOnSave()) {
         return;

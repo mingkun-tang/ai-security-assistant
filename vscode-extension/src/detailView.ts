@@ -1,7 +1,8 @@
 /** Build and render finding detail models (deterministic + optional AI). */
 
-import type { FindingDetailModel, SecurityFinding } from "./types";
+import type { FindingDetailModel, FixSuggestion, SecurityFinding } from "./types";
 import { formatEvidenceFlow } from "./evidenceFlow";
+import { FIX_SAFETY_LABEL, formatFixSuggestionSection } from "./fixSuggestion";
 
 export const AI_EXPLANATION_DISCLAIMER =
   "AI explains this finding but does not determine or classify it. The deterministic engine remains the source of truth.";
@@ -11,7 +12,17 @@ export function titleConfidence(confidence: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function buildFindingDetailModel(finding: SecurityFinding): FindingDetailModel {
+export interface DetailViewState {
+  fixSuggestion?: FixSuggestion;
+  fixStatus?: FindingDetailModel["fixStatus"];
+  fixMessage?: string;
+  sourceSnippet?: string;
+}
+
+export function buildFindingDetailModel(
+  finding: SecurityFinding,
+  state: DetailViewState = {},
+): FindingDetailModel {
   const recommendations = finding.recommendations.filter(Boolean);
   const primary =
     finding.remediation ||
@@ -20,6 +31,11 @@ export function buildFindingDetailModel(finding: SecurityFinding): FindingDetail
   const additional = recommendations.filter((item) => item !== primary);
 
   const aiExplanation = finding.aiExplanation?.trim() || undefined;
+  const sourceSnippet =
+    state.sourceSnippet?.trim() ||
+    finding.snippet?.trim() ||
+    finding.evidenceSteps.find((step) => step.kind !== "input_source")?.snippet ||
+    finding.evidenceSteps[0]?.snippet;
 
   return {
     issue: finding.displayName,
@@ -37,6 +53,11 @@ export function buildFindingDetailModel(finding: SecurityFinding): FindingDetail
     aiExplanation,
     showAiSection: Boolean(aiExplanation),
     aiDisclaimer: AI_EXPLANATION_DISCLAIMER,
+    sourceSnippet,
+    fixSuggestion: state.fixSuggestion,
+    fixStatus: state.fixStatus || "idle",
+    fixMessage: state.fixMessage,
+    fixSafetyLabel: FIX_SAFETY_LABEL,
   };
 }
 
@@ -100,6 +121,22 @@ export function formatFindingDetailMarkdown(model: FindingDetailModel): string {
     lines.push(model.aiExplanation);
   }
 
+  if (model.fixSuggestion) {
+    lines.push("", formatFixSuggestionSection(model.fixSuggestion));
+    if (model.sourceSnippet) {
+      lines.push("", "Current Code", "------------", "", model.sourceSnippet);
+      lines.push(
+        "",
+        "Suggested Code",
+        "--------------",
+        "",
+        model.fixSuggestion.replacementCode,
+      );
+    }
+  } else if (model.fixStatus === "unavailable") {
+    lines.push("", "## AI Fix Suggestion", "", model.fixMessage || "AI fix suggestion unavailable.");
+  }
+
   lines.push(
     "",
     "---",
@@ -133,15 +170,59 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
       </section>`
       : "";
 
+  let fixBlock = `
+    <section class="fix-suggest">
+      <h2>AI Fix Suggestion</h2>
+      <p class="disclaimer">${escape(model.fixSafetyLabel)}</p>
+      <button id="generate-fix" ${model.fixStatus === "loading" ? "disabled" : ""}>
+        ${model.fixStatus === "loading" ? "Generating…" : "Generate AI Fix Suggestion"}
+      </button>
+  `;
+
+  if (model.fixStatus === "loading") {
+    fixBlock += `<p class="status">Generating fix suggestion…</p>`;
+  } else if (model.fixStatus === "unavailable") {
+    fixBlock += `<p class="status">${escape(model.fixMessage || "AI fix suggestion unavailable.")}</p>`;
+  } else if (model.fixSuggestion) {
+    const suggestion = model.fixSuggestion;
+    fixBlock += `
+      <p><strong>${escape(suggestion.summary)}</strong></p>
+      <h3>Suggested replacement</h3>
+      <pre class="flow">${escape(suggestion.replacementCode)}</pre>
+      <h3>Why</h3>
+      <p>${escape(suggestion.explanation)}</p>
+      ${
+        suggestion.warnings.length
+          ? `<h3>Warnings</h3><ul>${suggestion.warnings
+              .map((item) => `<li>${escape(item)}</li>`)
+              .join("")}</ul>`
+          : ""
+      }
+      <h3>Current Code vs Suggested Code</h3>
+      <div class="diff">
+        <div>
+          <h4>Current Code</h4>
+          <pre class="flow">${escape(model.sourceSnippet || "(snippet unavailable)")}</pre>
+        </div>
+        <div>
+          <h4>Suggested Code</h4>
+          <pre class="flow">${escape(suggestion.replacementCode)}</pre>
+        </div>
+      </div>
+      <button id="show-diff">Open Diff Preview</button>
+      <p class="disclaimer">Review only — this extension does not modify your source files.</p>
+    `;
+  }
+
+  fixBlock += `</section>`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';" />
   <style>
-    :root {
-      color-scheme: light dark;
-    }
+    :root { color-scheme: light dark; }
     body {
       font-family: var(--vscode-font-family);
       font-size: var(--vscode-font-size);
@@ -149,7 +230,7 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
       background: var(--vscode-editor-background);
       line-height: 1.5;
       padding: 1.25rem 1.5rem 2rem;
-      max-width: 760px;
+      max-width: 860px;
     }
     h1 { font-size: 1.5rem; margin: 0 0 0.35rem; }
     h2 {
@@ -158,6 +239,8 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
       border-bottom: 1px solid var(--vscode-panel-border, rgba(127,127,127,0.35));
       padding-bottom: 0.25rem;
     }
+    h3 { font-size: 0.95rem; margin: 1rem 0 0.35rem; }
+    h4 { margin: 0 0 0.35rem; font-size: 0.9rem; }
     .meta { opacity: 0.9; margin-bottom: 0.75rem; }
     .badge {
       display: inline-block;
@@ -182,23 +265,35 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
       margin: 0.5rem 0 0.75rem;
       font-weight: 600;
     }
-    .ai {
+    .ai, .fix-suggest {
       margin-top: 1.25rem;
       padding: 0.85rem 1rem;
       border-radius: 6px;
       border: 1px dashed var(--vscode-panel-border, rgba(127,127,127,0.45));
       background: var(--vscode-textBlockQuote-background, rgba(127,127,127,0.08));
     }
-    .disclaimer {
-      font-style: italic;
-      opacity: 0.85;
-      margin-top: 0;
+    .disclaimer { font-style: italic; opacity: 0.85; margin-top: 0.35rem; }
+    .status { margin-top: 0.75rem; }
+    .diff {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
     }
-    footer {
-      margin-top: 1.5rem;
-      opacity: 0.7;
-      font-size: 0.9rem;
+    @media (min-width: 720px) {
+      .diff { grid-template-columns: 1fr 1fr; }
     }
+    button {
+      margin-top: 0.5rem;
+      margin-right: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid var(--vscode-button-border, transparent);
+      border-radius: 4px;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: default; }
+    footer { margin-top: 1.5rem; opacity: 0.7; font-size: 0.9rem; }
     code { font-family: var(--vscode-editor-font-family, monospace); }
   </style>
 </head>
@@ -228,15 +323,27 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
     model.primaryRemediation ||
       "Review the flagged code and apply the safest available control.",
   )}</div>
-  ${
-    additional
-      ? `<p>Additional guidance:</p><ul>${additional}</ul>`
-      : ""
-  }
+  ${additional ? `<p>Additional guidance:</p><ul>${additional}</ul>` : ""}
 
   ${aiBlock}
+  ${fixBlock}
 
   <footer>Deterministic engine finding. AI never overrides this result.</footer>
+  <script>
+    const vscode = acquireVsCodeApi();
+    const generate = document.getElementById('generate-fix');
+    if (generate) {
+      generate.addEventListener('click', () => {
+        vscode.postMessage({ command: 'generateFix' });
+      });
+    }
+    const showDiff = document.getElementById('show-diff');
+    if (showDiff) {
+      showDiff.addEventListener('click', () => {
+        vscode.postMessage({ command: 'showDiff' });
+      });
+    }
+  </script>
 </body>
 </html>`;
 }

@@ -1,7 +1,7 @@
 /** Orchestrates CLI scans and updates VS Code UI surfaces. */
 
 import * as vscode from "vscode";
-import { CliError, analyzeFileJson, scanProjectJson } from "./cli";
+import { CliError, analyzeFileJson, scanProjectJson, suggestFixJson } from "./cli";
 import { getExecutablePath } from "./config";
 import { applyDiagnostics } from "./diagnostics";
 import { FindingDetailPanel } from "./findingDetailPanel";
@@ -11,6 +11,7 @@ import {
   parseJsonText,
   parseScanJson,
 } from "./findings";
+import { parseFixSuggestionPayload } from "./fixSuggestion";
 import { resolveFindingUri } from "./paths";
 import type { FindingsStatusBar } from "./statusBar";
 import type { FindingsTreeProvider } from "./treeView";
@@ -167,8 +168,67 @@ export class FindingsController {
       return;
     }
 
-    FindingDetailPanel.show(selected);
+    FindingDetailPanel.show(selected, {
+      generateFixHandler: (item) => this.generateFixSuggestion(item),
+    });
     await this.revealFindingInEditor(selected);
+  }
+
+  async generateFixSuggestion(finding?: SecurityFinding): Promise<void> {
+    const selected =
+      finding ??
+      FindingDetailPanel.currentPanel()?.getFinding() ??
+      (await this.pickFinding());
+    if (!selected) {
+      return;
+    }
+
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    const uri = resolveFindingUri(selected.file, folder);
+    if (!uri) {
+      void vscode.window.showWarningMessage(
+        `Could not resolve file for finding: ${selected.file}`,
+      );
+      return;
+    }
+
+    const panel = FindingDetailPanel.show(selected, {
+      generateFixHandler: (item) => this.generateFixSuggestion(item),
+    });
+    panel.setLoading();
+
+    const executable = getExecutablePath();
+    try {
+      const raw = await suggestFixJson(
+        executable,
+        uri.fsPath,
+        selected.issueType,
+        selected.line,
+      );
+      const payload = parseFixSuggestionPayload(raw);
+      if (!payload.available || !payload.suggestion) {
+        panel.setUnavailable(
+          payload.message || "AI fix suggestion unavailable.",
+        );
+        return;
+      }
+
+      // Guard: AI must not change the deterministic issue type.
+      if (payload.suggestion.issueType !== selected.issueType) {
+        panel.setUnavailable("AI fix suggestion unavailable.");
+        return;
+      }
+
+      panel.setSuggestion(
+        payload.suggestion,
+        payload.sourceSnippet || selected.snippet,
+      );
+    } catch (error) {
+      panel.setUnavailable("AI fix suggestion unavailable.");
+      if (error instanceof CliError && error.message.includes("not found")) {
+        this.handleError(error);
+      }
+    }
   }
 
   async revealFindingInEditor(finding: SecurityFinding): Promise<void> {
