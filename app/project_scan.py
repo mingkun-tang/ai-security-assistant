@@ -119,6 +119,9 @@ def _normalize_finding(finding: dict, file_path: Path, project_root: Path) -> di
         "line": location["line"],
         "column": location.get("column"),
         "snippet": location.get("snippet"),
+        "missing_control": finding.get("missing_control"),
+        "impact": finding.get("impact"),
+        "recommendations": list(finding.get("recommendations") or []),
         "evidence_locations": finding.get("evidence_locations", []),
     }
 

@@ -60,6 +60,10 @@ For machine-readable output of the **deterministic** structured result only (no 
 ai-security-assistant analyze --json
 ```
 
+## VS Code extension
+
+An optional VS Code extension lives in [`vscode-extension/`](vscode-extension/). It invokes this CLI with `--json` and shows findings in Problems and a sidebar. See [vscode-extension/README.md](vscode-extension/README.md).
+
 ## AI setup (optional)
 
 Deterministic analysis works with no API keys. To enable optional AI explanations, see [README_AI.md](README_AI.md).

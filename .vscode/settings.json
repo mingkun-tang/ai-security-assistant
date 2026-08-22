@@ -1,0 +1,3 @@
+{
+  "aiSecurityAssistant.executablePath": "${workspaceFolder}/.venv/bin/ai-security-assistant"
+}

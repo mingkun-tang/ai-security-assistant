@@ -1,0 +1,85 @@
+{
+  "name": "ai-security-assistant",
+  "displayName": "AI Security Assistant",
+  "description": "Scan Python code with the local AI Security Assistant CLI and show deterministic findings in VS Code.",
+  "version": "0.1.0",
+  "publisher": "ai-security-assistant",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:python",
+    "onCommand:aiSecurityAssistant.scanCurrentFile",
+    "onCommand:aiSecurityAssistant.scanWorkspace",
+    "onCommand:aiSecurityAssistant.clearFindings"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiSecurityAssistant.scanCurrentFile",
+        "title": "AI Security Assistant: Scan Current File"
+      },
+      {
+        "command": "aiSecurityAssistant.scanWorkspace",
+        "title": "AI Security Assistant: Scan Workspace"
+      },
+      {
+        "command": "aiSecurityAssistant.clearFindings",
+        "title": "AI Security Assistant: Clear Findings"
+      },
+      {
+        "command": "aiSecurityAssistant.focusFindings",
+        "title": "AI Security Assistant: Focus Findings"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ai-security-assistant",
+          "title": "AI Security Assistant",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "ai-security-assistant": [
+        {
+          "id": "aiSecurityAssistant.findings",
+          "name": "AI Security Assistant"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI Security Assistant",
+      "properties": {
+        "aiSecurityAssistant.executablePath": {
+          "type": "string",
+          "default": "ai-security-assistant",
+          "description": "Path or command name for the AI Security Assistant CLI executable."
+        },
+        "aiSecurityAssistant.scanOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically scan the current Python file when it is saved."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test out/test/*.js",
+    "lint": "tsc -p ./ --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.3"
+  }
+}

@@ -3,3 +3,7 @@ __pycache__/
 .venv/
 *.pyc
 .env
+vscode-extension/node_modules/
+vscode-extension/out/
+vscode-extension/*.vsix
+.vscode-test/

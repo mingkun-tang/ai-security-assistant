@@ -43,6 +43,8 @@ def test_scan_project_includes_file_and_line():
     assert sqli["file"].endswith("app/routes/users.py")
     assert sqli["line"] == 5
     assert sqli["snippet"]
+    assert sqli["missing_control"]
+    assert sqli["recommendations"]
 
 
 def test_scan_project_continues_after_file_failure(monkeypatch):
