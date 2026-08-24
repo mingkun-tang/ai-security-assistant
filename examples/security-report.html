@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Security Report — demo_project</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #152033;
+      --elevated: #111827;
+      --text: #e5eef7;
+      --muted: #93a4b8;
+      --border: #243247;
+      --high: #ef4444;
+      --medium: #f59e0b;
+      --low: #3b82f6;
+      --accent: #2dd4bf;
+      --code: #0a101a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 420px at 8% -12%, rgba(45, 212, 191, 0.10), transparent 55%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.5rem 1.15rem 2.25rem;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 0 0.25rem;
+    }
+    h1 { margin: 0 0 0.2rem; font-size: 1.65rem; }
+    h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+    .muted { color: var(--muted); }
+    .meta { color: var(--muted); margin: 0 0 1rem; font-size: 0.92rem; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.85rem;
+    }
+    .card .label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .card .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-top: 0.2rem;
+    }
+    .score { color: var(--accent); }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.05rem;
+      margin-top: 0.9rem;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      text-align: left;
+      padding: 0.55rem 0.35rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 0.92rem;
+    }
+    th {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td:last-child, th:last-child { text-align: right; white-space: nowrap; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      background: #64748b;
+    }
+    .badge.high { background: var(--high); }
+    .badge.medium { background: var(--medium); }
+    .badge.low { background: var(--low); }
+    details.finding {
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-top: 0.65rem;
+      overflow: hidden;
+    }
+    details.finding > summary {
+      list-style: none;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 0.65rem;
+      align-items: center;
+      padding: 0.7rem 0.85rem;
+    }
+    details.finding > summary::-webkit-details-marker { display: none; }
+    details.finding > summary:hover { background: rgba(255,255,255,0.03); }
+    details.finding[open] > summary {
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-issue { font-weight: 600; }
+    .summary-file, .summary-line {
+      color: var(--muted);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.82rem;
+    }
+    .summary-line { text-align: right; }
+    .detail {
+      padding: 0.85rem 0.95rem 1rem;
+      display: grid;
+      gap: 0.75rem;
+    }
+    .detail h3 {
+      margin: 0 0 0.3rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+    }
+    .detail p { margin: 0; font-size: 0.92rem; }
+    .detail ul { margin: 0; padding-left: 1.1rem; }
+    .detail li { margin: 0.15rem 0; font-size: 0.92rem; }
+    pre, .flow {
+      margin: 0;
+      background: var(--code);
+      color: #dbeafe;
+      padding: 0.7rem 0.8rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.84rem;
+      border: 1px solid var(--border);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    .ai-fix, .ai-explain {
+      padding: 0.7rem 0.8rem;
+      border-radius: 8px;
+      border: 1px dashed rgba(45, 212, 191, 0.4);
+      background: rgba(45, 212, 191, 0.06);
+    }
+    .ai-explain {
+      border-color: rgba(59, 130, 246, 0.4);
+      background: rgba(59, 130, 246, 0.07);
+    }
+    .ai-note {
+      margin: 0.75rem 0 0;
+      font-size: 0.9rem;
+    }
+    .disclaimer {
+      margin: 0 0 0.35rem !important;
+      font-style: italic;
+      color: var(--muted);
+      font-size: 0.8rem !important;
+    }
+    footer {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.86em; }
+    @media (max-width: 720px) {
+      details.finding > summary {
+        grid-template-columns: auto 1fr;
+        grid-template-areas:
+          "badge issue"
+          "file line";
+      }
+      .summary-issue { grid-area: issue; }
+      .badge { grid-area: badge; }
+      .summary-file { grid-area: file; }
+      .summary-line { grid-area: line; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">AI Security Assistant</p>
+    <h1>demo_project</h1>
+    <p class="meta">2026-08-24 02:47:56 UTC · <code>./tests/fixtures/demo_project</code></p>
+
+    <section id="summary" aria-label="Scan summary">
+      <div class="cards">
+        <div class="card"><div class="label">Security Score</div><div class="value score">40/100</div></div>
+        <div class="card"><div class="label">Files Scanned</div><div class="value">4</div></div>
+        <div class="card"><div class="label">Total Findings</div><div class="value">3</div></div>
+        <div class="card"><div class="label">High</div><div class="value">3</div></div>
+        <div class="card"><div class="label">Medium</div><div class="value">0</div></div>
+        <div class="card"><div class="label">Low</div><div class="value">0</div></div>
+      </div>
+      
+    </section>
+
+    <section id="overview" class="panel">
+      <h2>Findings Overview</h2>
+      <table>
+        <thead>
+          <tr><th>Severity</th><th>Issue</th><th>File</th><th>Line</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class='badge high'>High</span></td><td><a href='#finding-1'>Server-Side Request Forgery (SSRF)</a></td><td><code>./app/api/fetch.py</code></td><td>6</td></tr><tr><td><span class='badge high'>High</span></td><td><a href='#finding-2'>SQL Injection</a></td><td><code>./app/routes/users.py</code></td><td>5</td></tr><tr><td><span class='badge high'>High</span></td><td><a href='#finding-3'>Cross-Site Scripting (XSS)</a></td><td><code>./lib/views.py</code></td><td>5</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="findings" class="panel">
+      <h2>Finding Details</h2>
+      
+    <details class="finding" id="finding-1">
+      <summary>
+        <span class="badge high">High</span>
+        <span class="summary-issue">Server-Side Request Forgery (SSRF)</span>
+        <span class="summary-file">./app/api/fetch.py</span>
+        <span class="summary-line">6</span>
+      </summary>
+      <div class="detail">
+        <div>
+          <h3>Evidence</h3>
+          <pre class='flow'>User-Controlled URL
+request.args.get(&quot;url&quot;)
+        ↓
+Server Request
+requests.get(url)</pre>
+        </div>
+        <div>
+          <h3>Why</h3>
+          <p>Validation or restriction of outbound request destinations may be missing. The server should only contact approved hosts and schemes, and should not treat a user-supplied URL as a trusted destination.</p>
+        </div>
+        <div>
+          <h3>Impact</h3>
+          <p>If this behavior is real and unauthenticated callers or normal users can trigger it, the likely impact is access to internal services, cloud metadata endpoints, or unintended external resources.</p>
+        </div>
+        <div>
+          <h3>Remediation</h3>
+          <ul><li>Allowlist approved destinations where practical</li><li>Validate URL schemes and hosts before making outbound requests</li><li>Block private and internal IP ranges where appropriate</li></ul>
+        </div>
+        
+        
+      </div>
+    </details>
+    
+    <details class="finding" id="finding-2">
+      <summary>
+        <span class="badge high">High</span>
+        <span class="summary-issue">SQL Injection</span>
+        <span class="summary-file">./app/routes/users.py</span>
+        <span class="summary-line">5</span>
+      </summary>
+      <div class="detail">
+        <div>
+          <h3>Evidence</h3>
+          <pre class='flow'>User Input (id)
+request.args.get(&quot;id&quot;)
+        ↓
+Database Query
+cursor.execute(&quot;SELECT * FROM users WHERE id = &quot; + user_id)</pre>
+        </div>
+        <div>
+          <h3>Why</h3>
+          <p>The application may be constructing SQL queries using user-controlled input instead of parameterized queries. Prepared statements or ORM parameter binding should keep untrusted values out of the query structure.</p>
+        </div>
+        <div>
+          <h3>Impact</h3>
+          <p>If this behavior is real and unauthenticated callers or normal users can trigger it, the likely impact is read, modify, or delete database records, or bypass authentication.</p>
+        </div>
+        <div>
+          <h3>Remediation</h3>
+          <ul><li>Use parameterized or prepared statements for all database access</li><li>Never concatenate user input into SQL strings</li><li>Prefer ORM parameter binding over raw dynamic SQL</li></ul>
+        </div>
+        
+        
+      </div>
+    </details>
+    
+    <details class="finding" id="finding-3">
+      <summary>
+        <span class="badge high">High</span>
+        <span class="summary-issue">Cross-Site Scripting (XSS)</span>
+        <span class="summary-file">./lib/views.py</span>
+        <span class="summary-line">5</span>
+      </summary>
+      <div class="detail">
+        <div>
+          <h3>Evidence</h3>
+          <pre class='flow'>User Input (name)
+request.args.get(&quot;name&quot;)
+        ↓
+Rendered Output
+render_template(&quot;hello.html&quot;, name=name)</pre>
+        </div>
+        <div>
+          <h3>Why</h3>
+          <p>Output encoding or context-aware escaping may be missing. User-controlled values should be encoded for the HTML, JavaScript, or attribute context where they are rendered, and input validation alone is not enough.</p>
+        </div>
+        <div>
+          <h3>Impact</h3>
+          <p>If this behavior is real and unauthenticated callers or normal users can trigger it, the likely impact is arbitrary JavaScript execution, session theft, account compromise, phishing, or DOM manipulation.</p>
+        </div>
+        <div>
+          <h3>Remediation</h3>
+          <ul><li>Apply context-aware output encoding before rendering user input</li><li>Escape data for the correct HTML, JavaScript, or attribute context</li><li>Use a Content Security Policy to reduce script execution impact</li></ul>
+        </div>
+        
+        
+      </div>
+    </details>
+    
+    </section>
+
+    <footer>
+      Generated by AI Security Assistant for <strong>demo_project</strong>.
+      Deterministic engine is the source of truth.
+    </footer>
+  </div>
+</body>
+</html>

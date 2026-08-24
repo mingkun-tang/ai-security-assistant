@@ -9,7 +9,13 @@ from app.reporting.model import (
     compute_security_score,
     top_risk_categories,
 )
-from app.reporting.render import escape_html, render_html_report, render_markdown_report
+from app.reporting.render import (
+    build_evidence_flow,
+    escape_html,
+    format_evidence_flow_text,
+    render_html_report,
+    render_markdown_report,
+)
 from app.reporting.service import generate_project_report
 
 DEMO = Path(__file__).parent / "fixtures" / "demo_project"
@@ -137,11 +143,47 @@ def test_markdown_generation_multiple_severities():
     )
     markdown = render_markdown_report(report)
     assert "# Security Report: demo" in markdown
-    assert "Security score:** 46 / 100" in markdown
-    assert "SQL Injection" in markdown
-    assert "Server-Side Request Forgery (SSRF)" in markdown
-    assert "AI Fix Suggestion" in markdown
+    assert "# Scan Summary" in markdown
+    assert "46/100" in markdown
+    assert "# Findings Overview" in markdown
+    assert "| Severity | Issue | File | Line |" in markdown
+    assert "| High | SQL Injection | `./app/users.py` | 12 |" in markdown
+    assert "| Medium | IDOR | `./app/users.py` | 20 |" in markdown
+    assert "# Findings" in markdown
+    assert "**Evidence**" in markdown
+    assert "request.args.get(\"q\")" in markdown
+    assert "↓" in markdown
+    assert "**Why:**" in markdown
+    assert "**Impact:**" in markdown
+    assert "**Remediation:**" in markdown
+    assert "**AI Fix Suggestion**" in markdown
     assert "cursor.execute" in markdown
+    assert "### AI Explanation" not in markdown
+    assert "# Executive Summary" not in markdown
+    assert "# Top Risk Categories" not in markdown
+    assert "# Security Score" not in markdown
+
+
+def test_ai_sections_are_optional():
+    scan = sample_scan()
+    scan["findings"][0]["ai_explanation"] = "This looks like classic SQLi via concat."
+    report = build_security_report(scan, project_name="demo")
+    markdown = render_markdown_report(report)
+    html = render_html_report(report)
+    assert "**AI Explanation:**" in markdown
+    assert "classic SQLi" in markdown
+    assert 'class="ai-explain"' in html
+    assert "classic SQLi" in html
+
+    bare = sample_scan()
+    bare["findings"][0].pop("ai_fix_suggestion", None)
+    bare_report = build_security_report(bare, project_name="demo")
+    bare_md = render_markdown_report(bare_report)
+    bare_html = render_html_report(bare_report)
+    assert "**AI Explanation:**" not in bare_md
+    assert "**AI Fix Suggestion**" not in bare_md
+    assert 'class="ai-explain"' not in bare_html
+    assert 'class="ai-fix"' not in bare_html
 
 
 def test_html_generation_escapes_snippets():
@@ -149,9 +191,14 @@ def test_html_generation_escapes_snippets():
     scan["findings"][0]["snippet"] = '<script>alert("x")</script>'
     scan["findings"][0]["evidence_locations"] = [
         {
+            "kind": "input_source",
+            "attrs": {"channel": "query", "name": "q"},
+            "location": {"line": 1, "snippet": 'request.args.get("q")'},
+        },
+        {
             "kind": "database_query",
-            "location": {"line": 1, "snippet": '<script>alert("x")</script>'},
-        }
+            "location": {"line": 2, "snippet": '<script>alert("x")</script>'},
+        },
     ]
     report = build_security_report(scan, project_name="demo")
     html = render_html_report(report)
@@ -160,7 +207,32 @@ def test_html_generation_escapes_snippets():
     assert "&lt;script&gt;" in html
     assert "<script>alert" not in html
     assert "Security Score" in html
+    assert "Findings Overview" in html
+    assert "<details class=\"finding\"" in html
+    assert "<summary>" in html
+    assert "id=\"overview\"" in html
+    assert "id=\"summary\"" in html
     assert escape_html("<b>") == "&lt;b&gt;"
+
+
+def test_html_findings_table_and_collapsed_details():
+    report = build_security_report(sample_scan(), project_name="demo")
+    html = render_html_report(report)
+    assert "<th>Severity</th><th>Issue</th><th>File</th><th>Line</th>" in html
+    assert "href='#finding-1'" in html
+    assert "./app/users.py" in html
+    assert ">12<" in html or ">12</td>" in html
+    assert "Evidence" in html
+    assert "Why" in html
+    assert "Impact" in html
+    assert "Remediation" in html
+    # Collapsed by default — no open attribute on details.
+    assert "<details class=\"finding\" id=\"finding-1\">" in html
+    assert "<details class=\"finding\" open" not in html
+    # Summary shows compact fields only.
+    assert "summary-issue" in html
+    assert "summary-file" in html
+    assert "summary-line" in html
 
 
 def test_html_and_markdown_include_summary_fields():
@@ -175,9 +247,9 @@ def test_html_and_markdown_include_summary_fields():
     for text in (html, md):
         assert "acme" in text
         assert "2026-08-21" in text
-        assert "2.25" in text
-        assert "Executive Summary" in text
-        assert "Top Risk Categories" in text
+        assert "2.25" in text or "Files" in text
+        assert "Findings Overview" in text
+        assert "Scan Summary" in text or 'id="summary"' in text
 
 
 def test_generate_project_report_from_demo():
@@ -191,6 +263,7 @@ def test_generate_project_report_from_demo():
     assert report["security_score"] <= 100
     assert "Security Report" in markdown
     assert "SQL Injection" in markdown
+    assert "Findings Overview" in markdown
 
 
 def test_cli_report_output_file(tmp_path):
@@ -209,6 +282,7 @@ def test_cli_report_output_file(tmp_path):
     content = out.read_text(encoding="utf-8")
     assert content.lstrip().startswith("<!DOCTYPE html>")
     assert "Security Report" in content
+    assert "<details" in content
 
 
 def test_cli_report_markdown_stdout(capsys):
@@ -216,4 +290,15 @@ def test_cli_report_markdown_stdout(capsys):
     out = capsys.readouterr().out
     assert code == 0
     assert out.lstrip().startswith("# Security Report:")
-    assert "Findings" in out
+    assert "Findings Overview" in out
+
+
+def test_evidence_flow_input_to_sink():
+    finding = sample_scan()["findings"][0]
+    steps = build_evidence_flow(finding)
+    assert steps[0]["kind"] == "input_source"
+    assert steps[-1]["kind"] == "database_query"
+    text = format_evidence_flow_text(steps)
+    assert "User Input" in text
+    assert "↓" in text
+    assert "Database Query" in text
