@@ -1,12 +1,41 @@
 [project]
 name = "ai-security-assistant"
-version = "0.1.0"
-description = "Educational deterministic security analysis CLI with optional AI explanation"
+version = "1.0.0"
+description = "Educational deterministic Python security analysis CLI with optional AI explanation and fix suggestions"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
+authors = [
+    { name = "Mingkun Tang" },
+]
+keywords = [
+    "security",
+    "sast",
+    "appsec",
+    "python",
+    "static-analysis",
+    "owasp",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
     "openai>=3.1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/mingkun-tang/ai-security-assistant"
+Repository = "https://github.com/mingkun-tang/ai-security-assistant"
+Issues = "https://github.com/mingkun-tang/ai-security-assistant/issues"
+Changelog = "https://github.com/mingkun-tang/ai-security-assistant/blob/main/CHANGELOG.md"
 
 [project.scripts]
 ai-security-assistant = "app.cli:main"
@@ -22,6 +51,16 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/app",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/pyproject.toml",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

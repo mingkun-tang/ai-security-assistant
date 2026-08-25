@@ -1,22 +1,50 @@
 {
   "name": "ai-security-assistant",
   "displayName": "AI Security Assistant",
-  "description": "Scan Python code with the local AI Security Assistant CLI and show deterministic findings in VS Code.",
-  "version": "0.1.0",
-  "publisher": "ai-security-assistant",
+  "description": "Scan Python code with a local deterministic security engine. Optional AI explains findings and suggests fixes — never overrides detection.",
+  "version": "1.0.0",
+  "publisher": "YOUR-PUBLISHER-ID",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0b1220",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mingkun-tang/ai-security-assistant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mingkun-tang/ai-security-assistant/issues"
+  },
+  "homepage": "https://github.com/mingkun-tang/ai-security-assistant#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
     "Linters",
+    "Programming Languages",
     "Other"
+  ],
+  "keywords": [
+    "security",
+    "python",
+    "sast",
+    "appsec",
+    "sql-injection",
+    "xss",
+    "ssrf",
+    "owasp",
+    "static-analysis"
   ],
   "activationEvents": [
     "onLanguage:python",
     "onCommand:aiSecurityAssistant.scanCurrentFile",
     "onCommand:aiSecurityAssistant.scanWorkspace",
     "onCommand:aiSecurityAssistant.clearFindings",
-    "onCommand:aiSecurityAssistant.viewFindingDetails"
+    "onCommand:aiSecurityAssistant.viewFindingDetails",
+    "onCommand:aiSecurityAssistant.generateFixSuggestion",
+    "onCommand:aiSecurityAssistant.applySuggestedFix"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -88,11 +116,14 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node --test out/test/*.js",
-    "lint": "tsc -p ./ --noEmit"
+    "lint": "tsc -p ./ --noEmit",
+    "package": "vsce package --no-dependencies",
+    "vsce:package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.3.2",
     "typescript": "^5.3.3"
   }
 }

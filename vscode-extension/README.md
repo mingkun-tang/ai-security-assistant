@@ -34,7 +34,21 @@ ai-security-assistant scan . --json
 cd vscode-extension
 npm install
 npm run compile
+npm test
 ```
+
+## Package a `.vsix` (sideload / release asset)
+
+```sh
+cd vscode-extension
+npm run package
+```
+
+This runs `vsce package` and writes `ai-security-assistant-1.0.0.vsix` (version from `package.json`).
+
+Install in VS Code / Cursor: **Extensions: Install from VSIX…**
+
+Before Marketplace publish, replace `publisher` (`YOUR-PUBLISHER-ID`) with your real publisher id.
 
 ## Run in Extension Development Host
 
