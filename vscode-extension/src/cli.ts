@@ -1,6 +1,8 @@
 /** Invoke the local AI Security Assistant CLI. */
 
 import { spawn } from "child_process";
+import { buildCliEnvironment } from "./cliEnv";
+import { getOpenAiModel } from "./config";
 
 export interface CliRunResult {
   stdout: string;
@@ -29,7 +31,7 @@ export async function runCli(
     let settled = false;
     const child = spawn(executable, args, {
       cwd: options.cwd,
-      env: process.env,
+      env: buildCliEnvironment(process.env, getOpenAiModel()),
       shell: false,
     });
 

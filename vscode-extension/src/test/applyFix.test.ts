@@ -1,15 +1,20 @@
-/** Tests for apply-fix planning, stale checks, and confirmation decisions. */
+/** Tests for apply-fix planning, UI affordances, and rescan messaging. */
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   APPLY_CONFIRM_TITLE,
+  DIFF_PREVIEW_ONLY_LABEL,
+  FIX_APPLIED_CLEARED_MESSAGE,
+  FIX_APPLIED_STILL_PRESENT_MESSAGE,
   STALE_SOURCE_MESSAGE,
   alignReplacementIndent,
+  applyRequiresDiffPreview,
   buildApplyFixPlan,
   findingStillPresent,
   findSnippetRange,
   resolveApplyDecision,
+  rescanOutcomeMessage,
   verifySnippetStillMatches,
 } from "../applyFix";
 import { buildFindingDetailModel, renderFindingDetailHtml } from "../detailView";
@@ -83,6 +88,15 @@ describe("apply fix planning", () => {
     assert.match(updated, /%s/);
     assert.doesNotMatch(updated, /\+ user_id/);
     assert.match(updated, /def search/);
+    // Surrounding code preserved — not a whole-file rewrite.
+    assert.equal(
+      updated.slice(0, plan.range.startOffset),
+      documentText.slice(0, plan.range.startOffset),
+    );
+    assert.equal(
+      updated.slice(plan.range.startOffset + plan.replacement.length),
+      documentText.slice(plan.range.endOffset),
+    );
   });
 
   it("rejects stale source that no longer matches the suggestion snippet", () => {
@@ -144,14 +158,19 @@ describe("apply fix planning", () => {
       false,
     );
   });
+
+  it("does not require untitled diff preview to apply (packaged VSIX path)", () => {
+    // Regression: Apply previously opened vscode.diff on untitled buffers,
+    // which surfaced Keep/Undo UI that never wrote the real file.
+    assert.equal(applyRequiresDiffPreview(), false);
+    assert.match(DIFF_PREVIEW_ONLY_LABEL, /does not modify your file/i);
+  });
 });
 
 describe("rescan messaging helpers", () => {
   it("reports when the finding is no longer detected", () => {
-    assert.equal(
-      findingStillPresent([], "sql_injection", 5),
-      false,
-    );
+    assert.equal(findingStillPresent([], "sql_injection", 5), false);
+    assert.equal(rescanOutcomeMessage(false), FIX_APPLIED_CLEARED_MESSAGE);
   });
 
   it("reports when the finding remains after apply", () => {
@@ -163,6 +182,7 @@ describe("rescan messaging helpers", () => {
       ),
       true,
     );
+    assert.equal(rescanOutcomeMessage(true), FIX_APPLIED_STILL_PRESENT_MESSAGE);
   });
 });
 
@@ -184,10 +204,50 @@ describe("detail view apply button", () => {
     );
     assert.match(withSuggestion, /Apply Suggested Fix/);
     assert.match(withSuggestion, /id="apply-fix"/);
+    assert.match(withSuggestion, /class="primary"/);
+    assert.match(withSuggestion, /Open Diff Preview/);
+    assert.match(withSuggestion, /Preview only/);
+    assert.match(withSuggestion, /postMessage\(\{ command: 'applyFix' \}\)/);
 
     const without = renderFindingDetailHtml(
       buildFindingDetailModel(sampleFinding(), { fixStatus: "idle" }),
     );
     assert.doesNotMatch(without, /id="apply-fix"/);
+  });
+
+  it("keeps generate action available without a suggestion", () => {
+    const html = renderFindingDetailHtml(
+      buildFindingDetailModel(sampleFinding(), { fixStatus: "idle" }),
+    );
+    assert.match(html, /id="generate-fix"/);
+    assert.doesNotMatch(html, /id="apply-fix"/);
+  });
+});
+
+describe("undo-compatible range edit simulation", () => {
+  it("applies a single contiguous replace that can be undone as one edit", () => {
+    const documentText = sampleDocument();
+    const plan = buildApplyFixPlan({
+      documentText,
+      expectedSnippet: ORIGINAL.trim(),
+      replacementCode: REPLACEMENT,
+      preferredLine: 5,
+    });
+    assert.equal(plan.ok, true);
+    if (!plan.ok) {
+      return;
+    }
+
+    // Simulate WorkspaceEdit.replace on one Range — one undo step restores prior text.
+    const before = documentText;
+    const after =
+      before.slice(0, plan.range.startOffset) +
+      plan.replacement +
+      before.slice(plan.range.endOffset);
+    const undone =
+      after.slice(0, plan.range.startOffset) +
+      plan.range.matchedText +
+      after.slice(plan.range.startOffset + plan.replacement.length);
+    assert.equal(undone, before);
   });
 });

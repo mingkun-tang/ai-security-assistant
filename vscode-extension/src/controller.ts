@@ -4,10 +4,12 @@ import * as vscode from "vscode";
 import {
   APPLY_CONFIRM_TITLE,
   APPLY_SAFETY_LABEL,
+  FIX_APPLIED_RESCAN_FAILED_MESSAGE,
   STALE_SOURCE_MESSAGE,
   buildApplyFixPlan,
   findingStillPresent,
   resolveApplyDecision,
+  rescanOutcomeMessage,
 } from "./applyFix";
 import { CliError, analyzeFileJson, scanProjectJson, suggestFixJson } from "./cli";
 import { getExecutablePath } from "./config";
@@ -248,21 +250,26 @@ export class FindingsController {
   }
 
   async applySuggestedFix(finding?: SecurityFinding): Promise<void> {
-    const panel = FindingDetailPanel.currentPanel();
-    const selected =
-      finding ?? panel?.getFinding() ?? (await this.pickFinding());
+    let selected =
+      finding ?? FindingDetailPanel.currentPanel()?.getFinding() ?? undefined;
+    if (!selected) {
+      selected = await this.pickFinding();
+    }
     if (!selected) {
       return;
     }
 
-    const state = panel?.getState();
-    const suggestion = state?.fixSuggestion;
+    // Re-bind handlers so Apply works even if the panel was opened earlier
+    // without applyFixHandler (packaged VSIX / command-palette path).
+    const panel = FindingDetailPanel.show(selected, this.panelHandlers());
+    const state = panel.getState();
+    const suggestion = state.fixSuggestion;
     const expectedSnippet =
-      state?.sourceSnippet?.trimEnd() || selected.snippet?.trimEnd() || "";
+      state.sourceSnippet?.trimEnd() || selected.snippet?.trimEnd() || "";
 
     if (!suggestion?.replacementCode?.trim()) {
       void vscode.window.showWarningMessage(
-        "No validated fix suggestion is available to apply.",
+        "No validated fix suggestion is available to apply. Generate one from the finding panel first.",
       );
       return;
     }
@@ -282,11 +289,12 @@ export class FindingsController {
       return;
     }
 
-    // Always show native diff before confirmation.
-    await FindingDetailPanel.show(selected, this.panelHandlers()).showDiffPreview();
+    // Do NOT open untitled vscode.diff here. In Cursor/VS Code that preview
+    // can show Keep/Undo controls that do not write the real source file.
+    // Apply must use WorkspaceEdit against the real document URI only.
 
-    const choice = await vscode.window.showInformationMessage(
-      `${APPLY_CONFIRM_TITLE}\n\n${APPLY_SAFETY_LABEL}`,
+    const choice = await vscode.window.showWarningMessage(
+      `${APPLY_CONFIRM_TITLE}\n\n${APPLY_SAFETY_LABEL}\n\nOnly the matched snippet range will be replaced. You can undo with normal Editor: Undo.`,
       { modal: true },
       "Apply Fix",
     );
@@ -318,12 +326,11 @@ export class FindingsController {
         plan.reason === "stale_source" ||
         plan.reason === "snippet_not_found"
       ) {
-        panel?.setUnavailable(STALE_SOURCE_MESSAGE);
+        panel.setUnavailable(STALE_SOURCE_MESSAGE);
       }
       return;
     }
 
-    // Re-verify immediately before write.
     const latestText = document.getText();
     const recheck = buildApplyFixPlan({
       documentText: latestText,
@@ -331,9 +338,15 @@ export class FindingsController {
       replacementCode: suggestion.replacementCode,
       preferredLine: selected.line,
     });
-    if (!recheck.ok) {
-      void vscode.window.showWarningMessage(recheck.message);
-      panel?.setUnavailable(recheck.message);
+    if (
+      !recheck.ok ||
+      recheck.range.startOffset !== plan.range.startOffset ||
+      recheck.range.endOffset !== plan.range.endOffset ||
+      recheck.replacement !== plan.replacement
+    ) {
+      const message = !recheck.ok ? recheck.message : STALE_SOURCE_MESSAGE;
+      void vscode.window.showWarningMessage(message);
+      panel.setUnavailable(message);
       return;
     }
 
@@ -350,10 +363,21 @@ export class FindingsController {
       return;
     }
 
-    // Keep suggestion cleared after applying; deterministic finding object
-    // from the prior scan is not mutated here — we rescan instead.
-    panel?.clearSuggestion();
+    // Reveal the real file so the user sees the WorkspaceEdit, not a preview buffer.
+    const replacementEnd = document.positionAt(
+      recheck.range.startOffset + recheck.replacement.length,
+    );
+    const editor = await vscode.window.showTextDocument(document, {
+      preview: false,
+      viewColumn: vscode.ViewColumn.One,
+      selection: new vscode.Range(start, replacementEnd),
+    });
+    editor.revealRange(
+      editor.selection,
+      vscode.TextEditorRevealType.InCenterIfOutsideViewport,
+    );
 
+    panel.clearSuggestion();
     await this.rescanAfterApply(selected, document.uri);
   }
 
@@ -396,16 +420,16 @@ export class FindingsController {
 
       if (stillThere) {
         void vscode.window.showInformationMessage(
-          "Fix applied, but the finding is still detected. Review the result.",
+          rescanOutcomeMessage(true),
         );
       } else {
         void vscode.window.showInformationMessage(
-          "Fix applied and finding no longer detected.",
+          rescanOutcomeMessage(false),
         );
       }
     } catch (error) {
       void vscode.window.showWarningMessage(
-        "Fix applied, but rescan failed. Review the file and scan again.",
+        FIX_APPLIED_RESCAN_FAILED_MESSAGE,
       );
       if (error instanceof CliError) {
         this.handleError(error);

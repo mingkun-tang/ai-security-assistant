@@ -3,7 +3,7 @@
 import type { FindingDetailModel, FixSuggestion, SecurityFinding } from "./types";
 import { formatEvidenceFlow } from "./evidenceFlow";
 import { formatFixSuggestionSection } from "./fixSuggestion";
-import { APPLY_SAFETY_LABEL } from "./applyFix";
+import { APPLY_SAFETY_LABEL, DIFF_PREVIEW_ONLY_LABEL } from "./applyFix";
 
 export const AI_EXPLANATION_DISCLAIMER =
   "AI explains this finding but does not determine or classify it. The deterministic engine remains the source of truth.";
@@ -210,10 +210,13 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
           <pre class="flow">${escape(suggestion.replacementCode)}</pre>
         </div>
       </div>
-      <button id="show-diff">Open Diff Preview</button>
-      <button id="apply-fix">Apply Suggested Fix</button>
+      <div class="actions">
+        <button id="apply-fix" class="primary">Apply Suggested Fix</button>
+        <button id="show-diff" class="secondary">Open Diff Preview</button>
+      </div>
+      <p class="disclaimer">${escape(DIFF_PREVIEW_ONLY_LABEL)}</p>
       <p class="disclaimer">${escape(model.fixSafetyLabel)}</p>
-      <p class="disclaimer">This extension only edits the exact suggested range after you confirm. It does not claim the result is secure.</p>
+      <p class="disclaimer">Apply writes only the matched snippet via a normal editor edit (undoable). It does not claim the result is secure.</p>
     `;
   }
 
@@ -288,13 +291,22 @@ export function renderFindingDetailHtml(model: FindingDetailModel): string {
     button {
       margin-top: 0.5rem;
       margin-right: 0.5rem;
-      padding: 0.4rem 0.75rem;
+      padding: 0.45rem 0.85rem;
       border: 1px solid var(--vscode-button-border, transparent);
       border-radius: 4px;
       background: var(--vscode-button-background);
       color: var(--vscode-button-foreground);
       cursor: pointer;
     }
+    button.secondary {
+      background: var(--vscode-button-secondaryBackground, transparent);
+      color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+      border-color: var(--vscode-button-border, rgba(127,127,127,0.45));
+    }
+    button.primary {
+      font-weight: 600;
+    }
+    .actions { margin-top: 0.35rem; }
     button:disabled { opacity: 0.6; cursor: default; }
     footer { margin-top: 1.5rem; opacity: 0.7; font-size: 0.9rem; }
     code { font-family: var(--vscode-editor-font-family, monospace); }

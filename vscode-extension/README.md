@@ -67,7 +67,7 @@ A new Extension Development Host window opens with the extension loaded.
 2. `npm install && npm run compile`
 3. Press **F5** with the **Run Extension** launch config.
 
-## Configure the CLI executable
+## Configure settings
 
 Settings → search **AI Security Assistant**:
 
@@ -75,6 +75,13 @@ Settings → search **AI Security Assistant**:
 |---------|---------|---------|
 | `aiSecurityAssistant.executablePath` | `ai-security-assistant` | CLI command or absolute path |
 | `aiSecurityAssistant.scanOnSave` | `false` | Scan the active Python file on save |
+| `aiSecurityAssistant.openaiModel` | `gpt-4o-mini` | OpenAI model forwarded as `OPENAI_MODEL` when not already set in your environment |
+
+**AI is optional.** Scanning, Problems, sidebar findings, and reports work without an API key. When you enable AI, **you provide your own `OPENAI_API_KEY`** (in your shell or IDE environment). The extension does not ship or store keys.
+
+**Model override:** set `OPENAI_MODEL` in your environment (wins over the VS Code setting), or change `aiSecurityAssistant.openaiModel` in settings (default `gpt-4o-mini`).
+
+**Context sent:** AI fix/explain requests send only the relevant finding metadata and source snippet to the CLI — not your entire repository.
 
 If the CLI is not on `PATH`, set an absolute path, for example:
 
@@ -117,7 +124,7 @@ Diagnostic text includes issue name, confidence, concise explanation, and the fi
 - **AI Security Assistant: Generate Fix Suggestion** — asks the local CLI for an optional AI fix suggestion (review only until you explicitly apply).
 - **AI Security Assistant: Apply Suggested Fix** — opens a diff, asks for confirmation, then replaces only the matched snippet via VS Code edits (undoable). Rescans afterward.
 
-AI fix suggestions require the same optional API key as explanations (`OPENAI_API_KEY`). Without a key, the UI shows “AI fix suggestion unavailable.” and deterministic findings continue working.
+AI fix suggestions require the same optional API key as explanations (`OPENAI_API_KEY`). Without a key, the UI shows “AI fix suggestion unavailable.” and deterministic findings continue working. Configure the model via `aiSecurityAssistant.openaiModel` (default `gpt-4o-mini`) or `OPENAI_MODEL` in your environment.
 
 ## Tests
 

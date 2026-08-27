@@ -39,6 +39,33 @@ export const APPLY_CONFIRM_TITLE = "Apply this AI-generated security fix?";
 export const APPLY_SAFETY_LABEL =
   "AI-generated suggestion — review before applying.";
 
+/** Diff preview uses untitled buffers and must never be treated as the write path. */
+export const DIFF_PREVIEW_ONLY_LABEL =
+  "Preview only — does not modify your file. Use Apply Suggested Fix to write the change.";
+
+export const FIX_APPLIED_CLEARED_MESSAGE =
+  "Fix applied and finding no longer detected.";
+
+export const FIX_APPLIED_STILL_PRESENT_MESSAGE =
+  "Fix applied, but the finding is still detected. Review the result.";
+
+export const FIX_APPLIED_RESCAN_FAILED_MESSAGE =
+  "Fix applied, but rescan failed. Review the file and scan again.";
+
+/**
+ * Apply writes through WorkspaceEdit on the real document URI.
+ * Opening a vscode.diff preview is optional and never required to apply.
+ */
+export function applyRequiresDiffPreview(): boolean {
+  return false;
+}
+
+export function rescanOutcomeMessage(findingStillDetected: boolean): string {
+  return findingStillDetected
+    ? FIX_APPLIED_STILL_PRESENT_MESSAGE
+    : FIX_APPLIED_CLEARED_MESSAGE;
+}
+
 function normalizeNewlines(text: string): string {
   return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }

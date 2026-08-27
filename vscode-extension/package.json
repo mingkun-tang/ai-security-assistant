@@ -107,6 +107,11 @@
           "type": "boolean",
           "default": false,
           "description": "Automatically scan the current Python file when it is saved."
+        },
+        "aiSecurityAssistant.openaiModel": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "OpenAI model forwarded to the CLI as OPENAI_MODEL when that environment variable is not already set. AI features remain optional and require your own OPENAI_API_KEY."
         }
       }
     }

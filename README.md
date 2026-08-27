@@ -85,10 +85,16 @@ Development Host: open the repo root → Run **Run AI Security Assistant Extensi
 
 ## AI explanations and fixes
 
-- Optional; set `OPENAI_API_KEY` (see [`README_AI.md`](README_AI.md))
-- Explanations clarify **why** a finding matters — they do **not** change issue type or confidence
-- Fix suggestions are **proposals**; VS Code shows a diff and asks before applying
-- Without a key, scanning and reports still work
+**AI is optional.** The deterministic scanner, VS Code findings, and HTML/Markdown reports work **without any API key**.
+
+When you enable AI:
+
+- **You provide your own OpenAI API key** via `OPENAI_API_KEY` (see [`README_AI.md`](README_AI.md)). Usage is billed to your OpenAI account.
+- **Default model:** `gpt-4o-mini` (CLI and VS Code). Override with `OPENAI_MODEL` in your environment, or `aiSecurityAssistant.openaiModel` in VS Code settings (parent env wins if already set).
+- **Privacy / cost:** AI requests send only the relevant finding metadata and source **snippet** — not your entire repository or project tree.
+- Explanations clarify **why** a finding matters — they do **not** change issue type or confidence.
+- Fix suggestions are **proposals**; VS Code shows a diff and asks before applying.
+- Without a key, scanning and reports still work; AI panels show unavailable states.
 
 ## Security reports
 

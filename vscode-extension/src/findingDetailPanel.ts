@@ -171,7 +171,10 @@ export class FindingDetailPanel {
       "vscode.diff",
       left.uri,
       right.uri,
-      `Current ↔ Suggested (${this.finding.displayName})`,
+      `Preview only · Current ↔ Suggested (${this.finding.displayName})`,
+    );
+    void vscode.window.showInformationMessage(
+      "Diff preview does not modify your file. Click Apply Suggested Fix in the finding panel to write the change.",
     );
   }
 

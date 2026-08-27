@@ -10,6 +10,12 @@ The deterministic engine remains the source of truth. If the AI provider is
 unavailable or returns invalid data, the deterministic CLI report still works
 normally.
 
+## AI is optional
+
+- **No API key required** for scanning, reporting, or the VS Code extension's deterministic findings.
+- Leave `OPENAI_API_KEY` unset to disable AI entirely. The app uses `NullProvider`, makes no network calls, and leaves deterministic output unchanged.
+- **You provide your own OpenAI API key** when you want explanations or fix suggestions. Usage is billed to your OpenAI account.
+
 ## OpenAI setup
 
 1. Create an OpenAI API key in the OpenAI Platform.
@@ -21,8 +27,13 @@ OPENAI_API_KEY=your_key_here
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-`OPENAI_MODEL` is optional. If it is not set, the application uses its
-documented low-cost default model for short explanations.
+`OPENAI_MODEL` is optional. If it is not set, the application uses
+`gpt-4o-mini` as the default for short explanations and fix suggestions.
+
+In VS Code, you can also set **AI Security Assistant: Openai Model**
+(`aiSecurityAssistant.openaiModel`, default `gpt-4o-mini`). The extension
+forwards it to the CLI as `OPENAI_MODEL` when that variable is not already set
+in your environment.
 
 Load the variables in your shell before running the CLI. For example:
 
@@ -36,11 +47,19 @@ uv run ai-security-assistant analyze
 Do not commit `.env` files or API keys. `.env` is ignored by Git and
 `.env.example` contains placeholders only.
 
+## What data is sent to the AI provider
+
+AI requests are intentionally small:
+
+- **Explanations:** immutable deterministic finding fields (issue type, confidence, evidence snippets, remediation text) for the analyzed scenario or file — not the whole repo.
+- **Fix suggestions:** one finding's metadata plus the matched **source snippet** and evidence locations — not the full file when a snippet is available, and never the entire project tree.
+
+The engine classifies findings locally; the AI only explains or proposes a replacement for review.
+
 ## Disabling AI
 
-Leave `OPENAI_API_KEY` unset to disable AI explanations. The application then
-uses `NullProvider`, which makes no network calls and leaves the deterministic
-report unchanged.
+Leave `OPENAI_API_KEY` unset to disable AI explanations and fix suggestions.
+Deterministic scan, report, and VS Code diagnostics continue to work.
 
 ## Provider behavior
 
