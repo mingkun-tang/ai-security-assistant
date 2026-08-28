@@ -143,7 +143,7 @@ def _upload_fact_is_dangerous(fact: Fact) -> bool:
     saved_to_web_root = fact.attrs.get("saved_to_web_root")
     if filename_controlled == "no" and saved_to_web_root != "yes":
         return False
-    if policy == "unchecked" or filename_controlled == "yes" or saved_to_web_root == "yes":
+    if filename_controlled == "yes" or saved_to_web_root == "yes":
         return True
     if policy in {None, "unknown"}:
         return filename_controlled == "yes" or saved_to_web_root == "yes"

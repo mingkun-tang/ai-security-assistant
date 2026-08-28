@@ -49,6 +49,8 @@ class CaseOutcome:
     actual_issue_types: list[str]
     primary_issue: str | None
     outcome: str
+    category_outcome: str
+    cross_class_findings: list[str]
     scanner_rules: list[str]
 
 
@@ -64,6 +66,8 @@ class BenchmarkReport:
     per_class: dict[str, dict[str, Any]]
     failures: list[dict[str, Any]] = field(default_factory=list)
     case_outcomes: list[CaseOutcome] = field(default_factory=list)
+    overall_category: dict[str, Any] | None = None
+    cross_class_noise: list[dict[str, Any]] = field(default_factory=list)
 
 
 def default_benchmark_root() -> Path:
@@ -110,17 +114,17 @@ def classify_case_outcome(
 ) -> CaseOutcome:
     detected_set = set(detected_types)
     expected_type = case.expected_issue_type
+    cross_class = sorted(t for t in detected_set if t != case.category)
 
     if case.expected_vulnerable:
         if expected_type and expected_type in detected_set:
             outcome = "tp"
         else:
             outcome = "fn"
+        category_outcome = outcome
     else:
-        if detected_set:
-            outcome = "fp"
-        else:
-            outcome = "tn"
+        outcome = "fp" if detected_set else "tn"
+        category_outcome = "fp" if case.category in detected_set else "tn"
 
     rules = detected_types.copy()
     if primary_issue and primary_issue not in rules:
@@ -134,20 +138,23 @@ def classify_case_outcome(
         actual_issue_types=detected_types,
         primary_issue=primary_issue,
         outcome=outcome,
+        category_outcome=category_outcome,
+        cross_class_findings=cross_class,
         scanner_rules=rules,
     )
 
 
-def aggregate_counts(outcomes: list[CaseOutcome]) -> ConfusionCounts:
+def aggregate_counts(outcomes: list[CaseOutcome], *, use_category: bool = False) -> ConfusionCounts:
     counts = ConfusionCounts()
     for item in outcomes:
-        if item.outcome == "tp":
+        label = item.category_outcome if use_category else item.outcome
+        if label == "tp":
             counts.tp += 1
-        elif item.outcome == "tn":
+        elif label == "tn":
             counts.tn += 1
-        elif item.outcome == "fp":
+        elif label == "fp":
             counts.fp += 1
-        elif item.outcome == "fn":
+        elif label == "fn":
             counts.fn += 1
     return counts
 
@@ -158,13 +165,14 @@ def aggregate_per_class(outcomes: list[CaseOutcome]) -> dict[str, dict[str, Any]
     }
     for item in outcomes:
         bucket = per_class.setdefault(item.category, ConfusionCounts())
-        if item.outcome == "tp":
+        label = item.category_outcome
+        if label == "tp":
             bucket.tp += 1
-        elif item.outcome == "tn":
+        elif label == "tn":
             bucket.tn += 1
-        elif item.outcome == "fp":
+        elif label == "fp":
             bucket.fp += 1
-        elif item.outcome == "fn":
+        elif label == "fn":
             bucket.fn += 1
 
     return {
@@ -183,10 +191,13 @@ def run_benchmark(benchmark_root: Path | None = None) -> BenchmarkReport:
 
     overall_counts = aggregate_counts(outcomes)
     overall_metrics = compute_metrics(overall_counts)
+    category_counts = aggregate_counts(outcomes, use_category=True)
+    category_overall_metrics = compute_metrics(category_counts)
 
     failures: list[dict[str, Any]] = []
+    cross_class_noise: list[dict[str, Any]] = []
     for item in outcomes:
-        if item.outcome in {"fp", "fn"}:
+        if item.category_outcome in {"fp", "fn"}:
             failures.append(
                 {
                     "case_id": item.case_id,
@@ -195,8 +206,19 @@ def run_benchmark(benchmark_root: Path | None = None) -> BenchmarkReport:
                     "expected_issue_type": item.expected_issue_type,
                     "actual_issue_types": item.actual_issue_types,
                     "primary_issue": item.primary_issue,
-                    "outcome": item.outcome,
+                    "outcome": item.category_outcome,
+                    "strict_outcome": item.outcome,
                     "scanner_rules": item.scanner_rules,
+                }
+            )
+        if item.cross_class_findings:
+            cross_class_noise.append(
+                {
+                    "case_id": item.case_id,
+                    "category": item.category,
+                    "cross_class_findings": item.cross_class_findings,
+                    "category_outcome": item.category_outcome,
+                    "strict_outcome": item.outcome,
                 }
             )
 
@@ -214,6 +236,8 @@ def run_benchmark(benchmark_root: Path | None = None) -> BenchmarkReport:
         per_class=aggregate_per_class(outcomes),
         failures=failures,
         case_outcomes=outcomes,
+        overall_category=metrics_to_dict(category_overall_metrics),
+        cross_class_noise=cross_class_noise,
     )
 
 
@@ -228,8 +252,10 @@ def report_to_dict(report: BenchmarkReport) -> dict[str, Any]:
         "vulnerable_cases": report.vulnerable_cases,
         "safe_cases": report.safe_cases,
         "overall": report.overall,
+        "overall_category": report.overall_category,
         "per_class": report.per_class,
         "failures": report.failures,
+        "cross_class_noise": report.cross_class_noise,
         "cases": [
             {
                 "case_id": item.case_id,
@@ -239,6 +265,8 @@ def report_to_dict(report: BenchmarkReport) -> dict[str, Any]:
                 "actual_issue_types": item.actual_issue_types,
                 "primary_issue": item.primary_issue,
                 "outcome": item.outcome,
+                "category_outcome": item.category_outcome,
+                "cross_class_findings": item.cross_class_findings,
             }
             for item in report.case_outcomes
         ],

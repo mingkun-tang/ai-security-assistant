@@ -120,6 +120,23 @@ DATA_ACCESS_APIS = {"get", "filter", "filter_by", "first"}
 USER_RESOURCE_NAMES = {"user", "User", "profile", "Profile", "account", "email"}
 OWNERSHIP_ATTRS = {"id", "owner_id", "user_id", "owner", "account_id"}
 IDENTITY_NAMES = {"current_user", "request", "session"}
+IDENTITY_FILTER_KEYWORDS = frozenset(
+    {
+        "id",
+        "pk",
+        "uuid",
+        "email",
+        "owner_id",
+        "user_id",
+        "account_id",
+        "document_id",
+        "invoice_id",
+        "profile_id",
+        "uid",
+        "owner",
+        "user",
+    }
+)
 
 
 def parse(language: str, path: str, source: str) -> EvidenceDocument:
@@ -221,6 +238,36 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self._parents: dict[ast.AST, ast.AST] = {}
         self.validated_url_vars: set[str] = set()
         self.validated_url_input_ids: set[str] = set()
+        self.module_import_aliases: dict[str, str] = {}
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            bind_name = alias.asname or alias.name.split(".")[0]
+            self._register_module_path(bind_name, alias.name)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if node.module is None:
+            return
+        for alias in node.names:
+            bind_name = alias.asname or alias.name
+            module_path = f"{node.module}.{alias.name}"
+            self._register_module_path(bind_name, module_path)
+
+    def _register_module_path(self, bind_name: str, module_path: str) -> None:
+        if bind_name in HTTP_MODULE_NAMES:
+            self.module_import_aliases[bind_name] = HTTP_MODULE_NAMES[bind_name]
+            return
+        if module_path in HTTP_MODULE_NAMES:
+            self.module_import_aliases[bind_name] = HTTP_MODULE_NAMES[module_path]
+            return
+        if module_path == "urllib.request" or module_path.endswith(".request"):
+            self.module_import_aliases[bind_name] = "urllib.request"
+            return
+        if module_path in {"http.client", "urllib.request"}:
+            self.module_import_aliases[bind_name] = module_path
+            return
+        if module_path.startswith("urllib"):
+            self.module_import_aliases[bind_name] = "urllib.request"
 
     def visit(self, node: ast.AST):
         if not self._parents:
@@ -492,6 +539,62 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             return
         if name == "session":
             self.scopes[-1][name] = ("local_session", None)
+            return
+        propagated = self._taint_ids_from_expr(value_node)
+        if propagated:
+            self.scopes[-1][name] = ("tainted", tuple(propagated))
+
+    def _imported_http_module(self, name: str) -> str | None:
+        if name in HTTP_MODULE_NAMES:
+            return HTTP_MODULE_NAMES[name]
+        return self.module_import_aliases.get(name)
+
+    def _taint_ids_from_expr(self, node: ast.AST | None) -> list[str]:
+        if node is None:
+            return []
+        if _is_escape_call(node):
+            return []
+        if isinstance(node, ast.Name):
+            return _binding_source_ids(self.lookup(node.id))
+        nested = self._facts_by_node.get(id(node))
+        if nested is not None and nested.kind == "input_source":
+            return [nested.id]
+        if isinstance(node, ast.Constant):
+            return []
+        ids: list[str] = []
+        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Mod)):
+            ids.extend(self._taint_ids_from_expr(node.left))
+            ids.extend(self._taint_ids_from_expr(node.right))
+            return _unique_ids(ids)
+        if isinstance(node, ast.JoinedStr):
+            for value in node.values:
+                if isinstance(value, ast.FormattedValue):
+                    ids.extend(self._taint_ids_from_expr(value.value))
+            return _unique_ids(ids)
+        if isinstance(node, ast.List) or isinstance(node, ast.Tuple):
+            for elt in node.elts:
+                ids.extend(self._taint_ids_from_expr(elt))
+            return _unique_ids(ids)
+        if isinstance(node, ast.Subscript):
+            return self._taint_ids_from_expr(node.value)
+        if isinstance(node, ast.Attribute):
+            if self._expr_is_upload_filename(node):
+                return ["upload:filename"]
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Attribute):
+                if node.func.attr == "get":
+                    receiver_ids = self._taint_ids_from_expr(node.func.value)
+                    if receiver_ids:
+                        return receiver_ids
+                if node.func.attr == "join":
+                    for arg in node.args:
+                        ids.extend(self._taint_ids_from_expr(arg))
+                    return _unique_ids(ids)
+            if _is_os_path_join_call(node):
+                for arg in node.args:
+                    ids.extend(self._taint_ids_from_expr(arg))
+                return _unique_ids(ids)
+        return []
 
     def _match_database_call(self, node: ast.Call) -> dict | None:
         api = _database_api(node.func)
@@ -512,7 +615,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             return None
 
         has_params = _has_query_params(node)
-        construction = _query_construction(sql_expr, has_params=has_params)
+        construction = _sql_expression_construction(sql_expr, has_params=has_params)
         input_ids = self._input_ids_from(sql_expr, *node.args[1:], *[kw.value for kw in node.keywords])
         return {
             "api": api,
@@ -668,6 +771,12 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             if binding and binding[0] == "local_session":
                 method = None if api == "request" else api.upper()
                 return ("requests", api, method)
+            imported = self._imported_http_module(func.value.id)
+            if imported == "urllib.request" and api == "urlopen":
+                return ("urllib.request", "urlopen", None)
+            if imported in {"requests", "httpx"} and api in HTTP_METHOD_APIS:
+                method = None if api == "request" else api.upper()
+                return (imported, api, method)
         if not (binding and binding[0] in {"http_module", "http_client"}):
             return None
         module = binding[1]
@@ -699,11 +808,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
     def _expr_is_from_input(self, node: ast.AST | None) -> bool:
         if node is None:
             return False
-        if isinstance(node, ast.Name):
-            binding = self.lookup(node.id)
-            return bool(binding and binding[0] == "input")
-        nested = self._facts_by_node.get(id(node))
-        return nested is not None and nested.kind == "input_source"
+        return bool(self._taint_ids_from_expr(node))
 
     def _observe_upload_call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Attribute) and node.func.attr == "get":
@@ -847,7 +952,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
     def _match_returned_html_output(self, node: ast.AST) -> dict | None:
         if _is_escape_call(node):
             return None
-        input_ids = self._unescaped_input_ids_from(node)
+        input_ids = self._taint_ids_from_expr(node)
         if not input_ids:
             return None
         has_html = _looks_like_html(node)
@@ -926,8 +1031,6 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         if left.attr == "scheme":
             if isinstance(op, ast.NotEq) and _const_str(right) == "https":
                 return (url_var, input_ids)
-            if isinstance(op, ast.Eq) and _const_str(right) == "http":
-                return (url_var, input_ids)
         if left.attr == "hostname" and isinstance(op, ast.NotIn):
             return (url_var, input_ids)
         return None
@@ -961,7 +1064,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 return
         resource = self._infer_user_resource(chain)
         operation = "read"
-        keyed = self._call_keyed_by_input(node)
+        keyed = self._call_keyed_identity_access(node)
         if keyed:
             self._emit_data_access_fact(
                 node,
@@ -970,6 +1073,22 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 keyed_by_input=True,
                 role_mutation=False,
             )
+
+    def _call_keyed_identity_access(self, node: ast.Call) -> bool:
+        if not isinstance(node.func, ast.Attribute):
+            return False
+        api = node.func.attr
+        if api == "get":
+            return bool(self._input_ids_from(*node.args, *[kw.value for kw in node.keywords]))
+        if api in {"filter", "filter_by"}:
+            for kw in node.keywords:
+                if kw.arg and kw.arg in IDENTITY_FILTER_KEYWORDS:
+                    if self._input_ids_from(kw.value):
+                        return True
+            return False
+        if api == "first":
+            return bool(self._input_ids_from(*node.args))
+        return False
 
     def _call_keyed_by_input(self, node: ast.Call) -> bool:
         nodes = list(node.args) + [kw.value for kw in node.keywords]
@@ -1355,13 +1474,17 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         for node in nodes:
             if node is None:
                 continue
-            for child in ast.walk(node):
-                if isinstance(child, ast.Name):
-                    binding = self.lookup(child.id)
-                    if binding and binding[0] == "input" and binding[1] not in seen:
-                        seen.add(binding[1])
-                        ids.append(binding[1])
-                nested = self._facts_by_node.get(id(child))
+            stack = [node]
+            while stack:
+                current = stack.pop()
+                if isinstance(current, ast.Call) and _is_escape_call(current):
+                    continue
+                if isinstance(current, ast.Name):
+                    for source_id in _binding_source_ids(self.lookup(current.id)):
+                        if source_id not in seen:
+                            seen.add(source_id)
+                            ids.append(source_id)
+                nested = self._facts_by_node.get(id(current))
                 if (
                     nested is not None
                     and nested.kind == "input_source"
@@ -1369,6 +1492,10 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 ):
                     seen.add(nested.id)
                     ids.append(nested.id)
+                for child in ast.iter_child_nodes(current):
+                    if isinstance(child, ast.Call) and _is_escape_call(child):
+                        continue
+                    stack.append(child)
         return ids
 
     def _emit_input_fact(self, node: ast.AST, spec: dict) -> None:
@@ -1446,6 +1573,42 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self.locations.append(location)
         self.facts.append(fact)
         return fact
+
+
+def _binding_source_ids(binding: tuple | None) -> list[str]:
+    if binding is None:
+        return []
+    kind = binding[0]
+    payload = binding[1]
+    if kind == "input":
+        return [payload]
+    if kind == "tainted":
+        return list(payload)
+    return []
+
+
+def _unique_ids(ids: list[str]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in ids:
+        if item not in seen:
+            seen.add(item)
+            ordered.append(item)
+    return ordered
+
+
+def _is_os_path_join_call(node: ast.Call) -> bool:
+    chain = _attr_chain(node.func)
+    if chain is None:
+        return False
+    return chain[-3:] == ["os", "path", "join"] or chain[-2:] == ["path", "join"]
+
+
+def _sql_expression_construction(sql_expr: ast.AST | None, *, has_params: bool) -> str:
+    if isinstance(sql_expr, ast.Call) and isinstance(sql_expr.func, ast.Attribute):
+        if sql_expr.func.attr == "join":
+            return "concat"
+    return _query_construction(sql_expr, has_params=has_params)
 
 
 def _database_api(func: ast.AST) -> str | None:
