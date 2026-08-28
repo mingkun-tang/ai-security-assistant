@@ -1,0 +1,1547 @@
+{
+  "generated_at": "2026-08-28 02:08:29 UTC",
+  "benchmark_root": "/Users/oskrcjx/Appsec Projects/ai-security-assistant/evaluation/holdout2",
+  "scanner": "analyze_source (deterministic engine + Python AST parser)",
+  "supported_source_issue_types": [
+    "sql_injection",
+    "xss",
+    "ssrf",
+    "file_upload",
+    "idor"
+  ],
+  "scenario_only_issue_types": [
+    "modify_data",
+    "delete_action",
+    "privilege_escalation",
+    "csrf"
+  ],
+  "total_cases": 100,
+  "vulnerable_cases": 50,
+  "safe_cases": 50,
+  "overall": {
+    "tp": 39,
+    "tn": 42,
+    "fp": 8,
+    "fn": 11,
+    "total": 100,
+    "precision": 0.8297872340425532,
+    "recall": 0.78,
+    "f1": 0.8041237113402062,
+    "false_positive_rate": 0.16,
+    "accuracy": 0.81
+  },
+  "overall_category": {
+    "tp": 39,
+    "tn": 42,
+    "fp": 8,
+    "fn": 11,
+    "total": 100,
+    "precision": 0.8297872340425532,
+    "recall": 0.78,
+    "f1": 0.8041237113402062,
+    "false_positive_rate": 0.16,
+    "accuracy": 0.81
+  },
+  "per_class": {
+    "sql_injection": {
+      "tp": 8,
+      "tn": 10,
+      "fp": 0,
+      "fn": 2,
+      "total": 20,
+      "precision": 1.0,
+      "recall": 0.8,
+      "f1": 0.888888888888889,
+      "false_positive_rate": 0.0,
+      "accuracy": 0.9
+    },
+    "xss": {
+      "tp": 9,
+      "tn": 10,
+      "fp": 0,
+      "fn": 1,
+      "total": 20,
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.9473684210526316,
+      "false_positive_rate": 0.0,
+      "accuracy": 0.95
+    },
+    "ssrf": {
+      "tp": 9,
+      "tn": 6,
+      "fp": 4,
+      "fn": 1,
+      "total": 20,
+      "precision": 0.6923076923076923,
+      "recall": 0.9,
+      "f1": 0.7826086956521738,
+      "false_positive_rate": 0.4,
+      "accuracy": 0.75
+    },
+    "file_upload": {
+      "tp": 5,
+      "tn": 9,
+      "fp": 1,
+      "fn": 5,
+      "total": 20,
+      "precision": 0.8333333333333334,
+      "recall": 0.5,
+      "f1": 0.625,
+      "false_positive_rate": 0.1,
+      "accuracy": 0.7
+    },
+    "idor": {
+      "tp": 8,
+      "tn": 7,
+      "fp": 3,
+      "fn": 2,
+      "total": 20,
+      "precision": 0.7272727272727273,
+      "recall": 0.8,
+      "f1": 0.761904761904762,
+      "false_positive_rate": 0.3,
+      "accuracy": 0.75
+    }
+  },
+  "failures": [
+    {
+      "case_id": "u2_sqli_v_extra_where_list",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_sqli_v_loop_join_fragments",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_xss_v_list_join_tags",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_ssrf_v_aiohttp_session",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_ssrf_s_allowlist_netloc",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "ssrf"
+      ]
+    },
+    {
+      "case_id": "u2_ssrf_s_https_only_scheme",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "ssrf"
+      ]
+    },
+    {
+      "case_id": "u2_ssrf_s_block_private_ip",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "ssrf"
+      ]
+    },
+    {
+      "case_id": "u2_ssrf_s_fixed_path_append",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "ssrf"
+      ]
+    },
+    {
+      "case_id": "u2_upload_v_shutil_copy",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_upload_v_open_write_bytes",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_upload_v_pathlib_write",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_upload_v_double_name_chain",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_upload_v_join_webroot",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_upload_s_outside_webroot",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "file_upload"
+      ],
+      "primary_issue": "file_upload",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "file_upload"
+      ]
+    },
+    {
+      "case_id": "u2_idor_v_record_id_param",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_idor_v_filter_username",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "strict_outcome": "fn",
+      "scanner_rules": []
+    },
+    {
+      "case_id": "u2_idor_s_guard_before_delete",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "idor"
+      ]
+    },
+    {
+      "case_id": "u2_idor_s_get_with_owner_check",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "idor"
+      ]
+    },
+    {
+      "case_id": "u2_idor_s_admin_role_gate",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "fp",
+      "strict_outcome": "fp",
+      "scanner_rules": [
+        "idor"
+      ]
+    }
+  ],
+  "cross_class_noise": [],
+  "cases": [
+    {
+      "case_id": "u2_sqli_v_insert_values_concat",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_like_clause_mod",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_extra_where_list",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_four_hop_query",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_pipe_join_execute",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_percent_two_fields",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_orm_raw_fstring",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_update_concat",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_loop_join_fragments",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_v_union_concat",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "actual_issue_types": [
+        "sql_injection"
+      ],
+      "primary_issue": "sql_injection",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_text_named_bind",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_executemany_tuple",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_orm_exclude_static",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_static_select",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_whitelist_column_map",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_parameterized_limit",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_user_logged_not_queried",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_in_static_ids",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_django_filter_static",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_sqli_s_raw_with_params",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_markup_format_user",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_nested_span_concat",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_triple_hop_render",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_json_field_in_html",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_fstring_div",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_list_join_tags",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_error_message_reflect",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_template_percent",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_attr_value_concat",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_v_render_string_kw",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "actual_issue_types": [
+        "xss"
+      ],
+      "primary_issue": "xss",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_jsonify_message",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_markupsafe_escape_chain",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_static_template_file",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_no_output",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_escaped_fstring",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_redirect_only",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_hardcoded_markup",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_template_static_ctx",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_user_in_comment_only",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_xss_s_bleach_clean",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_httpx_client",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_aiohttp_session",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_double_assign_url",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_json_callback",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_fstring_requests",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_concat_scheme_host",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_post_body_url",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_session_get_alias",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_path_join_url",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_v_urllib_alias",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_fixed_healthcheck",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_allowlist_netloc",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_https_only_scheme",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_no_network_call",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_literal_urllib",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_user_logged_static_fetch",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_block_private_ip",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_fixed_path_append",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "ssrf"
+      ],
+      "primary_issue": "ssrf",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_redirect_response_only",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_ssrf_s_json_return_url",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_shutil_copy",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_open_write_bytes",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_pathlib_write",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_double_name_chain",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_no_ext_check",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [
+        "file_upload"
+      ],
+      "primary_issue": "file_upload",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_public_tmp",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [
+        "file_upload"
+      ],
+      "primary_issue": "file_upload",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_py_extension",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [
+        "file_upload"
+      ],
+      "primary_issue": "file_upload",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_concat_dir",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [
+        "file_upload"
+      ],
+      "primary_issue": "file_upload",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_join_webroot",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_v_fstring_dest",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "actual_issue_types": [
+        "file_upload"
+      ],
+      "primary_issue": "file_upload",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_random_hex_name",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_reject_py_ext",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_fixed_basename",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_whitelist_ext",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_outside_webroot",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "file_upload"
+      ],
+      "primary_issue": "file_upload",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_no_persist",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_sanitize_filename",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_uuid_subdir",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_content_type_check",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_upload_s_max_size_reject",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_record_id_param",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_json_user_uuid",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_filter_username",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "fn",
+      "category_outcome": "fn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_delete_invoice",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_nested_json_owner",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_post_profile_id",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_email_lookup",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_document_json_id",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_account_filter_id",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_v_quad_hop_lookup",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "tp",
+      "category_outcome": "tp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_session_user_only",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_guard_before_delete",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_static_resource",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_no_user_lookup",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_filter_owner_session",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_get_with_owner_check",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_current_user_profile",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_admin_role_gate",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [
+        "idor"
+      ],
+      "primary_issue": "idor",
+      "outcome": "fp",
+      "category_outcome": "fp",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_logged_not_queried",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    },
+    {
+      "case_id": "u2_idor_s_list_public",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "actual_issue_types": [],
+      "primary_issue": null,
+      "outcome": "tn",
+      "category_outcome": "tn",
+      "cross_class_findings": []
+    }
+  ]
+}
