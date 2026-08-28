@@ -110,6 +110,8 @@ def _apply_network_signals(signals: dict, facts: list[Fact]) -> None:
     signals["network"]["server_request"] = True
     signals["network"]["destination_reference"] = True
     for fact in facts:
+        if fact.attrs.get("destination_validated"):
+            continue
         destination_kind = fact.attrs.get("destination_kind")
         if destination_kind in {"from_input", "concat", "fstring", "format"}:
             signals["network"]["user_controlled_url"] = True
@@ -123,15 +125,29 @@ def _apply_upload_signals(signals: dict, facts: list[Fact]) -> None:
             continue
         signals["upload"]["file_upload_action"] = True
         policy = fact.attrs.get("extension_policy")
-        if policy in {"allow_executable", "unchecked"}:
-            signals["upload"]["dangerous_file"] = True
         if policy == "allow_image":
             signals["upload"]["safe_file_type"] = True
         if fact.attrs.get("saved_to_web_root") == "yes":
             signals["upload"]["execution_context"] = True
-        if fact.attrs.get("saved") and policy in {None, "unknown", "unchecked"}:
-            if fact.attrs.get("filename_user_controlled") == "yes":
-                signals["upload"]["dangerous_file"] = True
+        if _upload_fact_is_dangerous(fact):
+            signals["upload"]["dangerous_file"] = True
+
+
+def _upload_fact_is_dangerous(fact: Fact) -> bool:
+    policy = fact.attrs.get("extension_policy")
+    if policy in {"reject_executable", "allow_image", "checked"}:
+        return False
+    if not fact.attrs.get("saved"):
+        return False
+    filename_controlled = fact.attrs.get("filename_user_controlled")
+    saved_to_web_root = fact.attrs.get("saved_to_web_root")
+    if filename_controlled == "no" and saved_to_web_root != "yes":
+        return False
+    if policy == "unchecked" or filename_controlled == "yes" or saved_to_web_root == "yes":
+        return True
+    if policy in {None, "unknown"}:
+        return filename_controlled == "yes" or saved_to_web_root == "yes"
+    return policy == "allow_executable"
 
 
 def _apply_auth_signals(signals: dict, facts: list[Fact]) -> None:

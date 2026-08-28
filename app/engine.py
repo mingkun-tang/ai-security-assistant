@@ -835,7 +835,6 @@ def has_xss_evidence(signals):
     has_abuse_or_missing_control = (
         injection.get("injection_attempt")
         or rendering.get("reflected_output")
-        or rendering.get("rendered_output")
         or rendering.get("appears_in_output")
         or rendering.get("missing_escaping")
     )

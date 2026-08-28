@@ -55,6 +55,12 @@ HTML_MARKUP_PATTERN = re.compile(
     r"<\s*/?\s*[a-zA-Z]|<!DOCTYPE|&lt;",
     re.IGNORECASE,
 )
+HTML_ATTR_SINK_PATTERN = re.compile(
+    r"(?:href|src|action)\s*=\s*['\"]",
+    re.IGNORECASE,
+)
+PATH_PARAM_ATTRS = {"view_args"}
+ABORT_APIS = {"abort", "exit"}
 RENDER_TEMPLATE_APIS = {
     "render_template": "template",
     "render_template_string": "template",
@@ -213,6 +219,8 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self._facts_by_node: dict[int, Fact] = {}
         self._auth_emitted: set[int] = set()
         self._parents: dict[ast.AST, ast.AST] = {}
+        self.validated_url_vars: set[str] = set()
+        self.validated_url_input_ids: set[str] = set()
 
     def visit(self, node: ast.AST):
         if not self._parents:
@@ -267,6 +275,11 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 self.visit(default)
         self.scopes.append({})
         self.extension_policies.append(None)
+        self.validated_url_vars = set()
+        self.validated_url_input_ids = set()
+        for arg in node.args.args:
+            if arg.arg == "session":
+                self.scopes[-1][arg.arg] = ("local_session", None)
         for stmt in node.body:
             self.visit(stmt)
         self.scopes.pop()
@@ -287,6 +300,20 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 self._bind(node.target.id, node.value)
                 return
         self.visit(node.target)
+
+    def visit_Return(self, node: ast.Return) -> None:
+        if node.value is not None:
+            self.visit(node.value)
+            spec = self._match_returned_html_output(node.value)
+            if spec is not None:
+                self._emit_rendered_output_fact(node, spec)
+
+    def visit_If(self, node: ast.If) -> None:
+        self.generic_visit(node)
+        if _if_body_aborts(node.body):
+            self._observe_url_validation_if(node)
+            if _endswith_executable_rejection_test(node.test):
+                self.extension_policies[-1] = "reject_executable"
 
     def visit_Call(self, node: ast.Call) -> None:
         self.generic_visit(node)
@@ -385,6 +412,22 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             container = self.match_container(func.value)
             if container is not None:
                 return {**container, "name": _first_str_arg(node)}
+            path_spec = self._match_path_param_get(func.value)
+            if path_spec is not None:
+                return {**path_spec, "name": _first_str_arg(node)}
+        return None
+
+    def _match_path_param_get(self, node: ast.AST) -> dict | None:
+        chain = _attr_chain(node)
+        if chain is None:
+            return None
+        suffix = _request_suffix(chain)
+        if suffix is not None and len(suffix) == 1 and suffix[0] in PATH_PARAM_ATTRS:
+            return {
+                "framework": "flask",
+                "channel": "path",
+                "name": None,
+            }
         return None
 
     def _match_input_subscript(self, node: ast.Subscript) -> dict | None:
@@ -395,6 +438,16 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         whole = self.match_whole_source(node.value)
         if whole is not None:
             return {**whole, "name": _const_str(node.slice)}
+
+        chain = _attr_chain(node.value)
+        if chain is not None:
+            suffix = _request_suffix(chain)
+            if suffix is not None and len(suffix) == 1 and suffix[0] in PATH_PARAM_ATTRS:
+                return {
+                    "framework": "flask",
+                    "channel": "path",
+                    "name": _const_str(node.slice),
+                }
         return None
 
     def _bind(self, name: str, value_node: ast.AST) -> None:
@@ -423,6 +476,15 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             return
         if isinstance(value_node, ast.Constant) and isinstance(value_node.value, str):
             self.scopes[-1][name] = ("string", value_node.value)
+            return
+        if _is_urlparse_call(value_node):
+            url_arg = value_node.args[0] if value_node.args else None
+            input_ids = self._input_ids_from(url_arg)
+            url_var = _urlparse_url_var(url_arg)
+            self.scopes[-1][name] = (
+                "parsed_url",
+                {"input_ids": input_ids, "url_var": url_var},
+            )
             return
         session_framework = self._session_framework(value_node)
         if session_framework is not None:
@@ -576,6 +638,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             *node.args,
             *[keyword.value for keyword in node.keywords],
         )
+        destination_validated = self._url_destination_validated(url_node, input_ids)
         return {
             "api": api,
             "method": method,
@@ -583,6 +646,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             "uses_input_source_ids": input_ids,
             "server_side": True,
             "module": module,
+            "destination_validated": destination_validated,
         }
 
     def _match_http_client(self, func: ast.AST) -> tuple[str, str, str | None] | None:
@@ -601,6 +665,9 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         binding = None
         if isinstance(func.value, ast.Name):
             binding = self.lookup(func.value.id)
+            if binding and binding[0] == "local_session":
+                method = None if api == "request" else api.upper()
+                return ("requests", api, method)
         if not (binding and binding[0] in {"http_module", "http_client"}):
             return None
         module = binding[1]
@@ -777,6 +844,105 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         )
         self._facts_by_node[id(node)] = fact
 
+    def _match_returned_html_output(self, node: ast.AST) -> dict | None:
+        if _is_escape_call(node):
+            return None
+        input_ids = self._unescaped_input_ids_from(node)
+        if not input_ids:
+            return None
+        has_html = _looks_like_html(node)
+        has_attr_sink = _has_html_attribute_sink(node)
+        if not has_html and not has_attr_sink:
+            return None
+        escaping = _escaping_observed(node)
+        if escaping == "yes":
+            return None
+        sink = "html" if has_html or has_attr_sink else "generic_response"
+        return {
+            "sink": sink,
+            "escaping_observed": escaping,
+            "uses_input_source_ids": input_ids,
+        }
+
+    def _unescaped_input_ids_from(self, node: ast.AST | None) -> list[str]:
+        if node is None:
+            return []
+        ids: list[str] = []
+        seen: set[str] = set()
+        stack = [node]
+        while stack:
+            current = stack.pop()
+            if isinstance(current, ast.Call) and _is_escape_call(current):
+                continue
+            if isinstance(current, ast.Name):
+                binding = self.lookup(current.id)
+                if binding and binding[0] == "input" and binding[1] not in seen:
+                    seen.add(binding[1])
+                    ids.append(binding[1])
+            nested = self._facts_by_node.get(id(current))
+            if (
+                nested is not None
+                and nested.kind == "input_source"
+                and nested.id not in seen
+            ):
+                seen.add(nested.id)
+                ids.append(nested.id)
+            for child in ast.iter_child_nodes(current):
+                stack.append(child)
+        return ids
+
+    def _observe_url_validation_if(self, node: ast.If) -> None:
+        for url_var, input_ids in self._url_validation_targets_from_test(node.test):
+            if url_var:
+                self.validated_url_vars.add(url_var)
+            for input_id in input_ids:
+                self.validated_url_input_ids.add(input_id)
+
+    def _url_validation_targets_from_test(self, test: ast.AST) -> list[tuple[str | None, list[str]]]:
+        results: list[tuple[str | None, list[str]]] = []
+        if isinstance(test, ast.Compare):
+            left: ast.AST = test.left
+            for op, comparator in zip(test.ops, test.comparators):
+                target = self._parsed_url_validation_target(left, op, comparator)
+                if target is not None:
+                    results.append(target)
+                left = comparator
+        return results
+
+    def _parsed_url_validation_target(
+        self,
+        left: ast.AST,
+        op: ast.cmpop,
+        right: ast.AST,
+    ) -> tuple[str | None, list[str]] | None:
+        if not isinstance(left, ast.Attribute) or not isinstance(left.value, ast.Name):
+            return None
+        binding = self.lookup(left.value.id)
+        if not binding or binding[0] != "parsed_url":
+            return None
+        meta = binding[1]
+        url_var = meta.get("url_var")
+        input_ids = list(meta.get("input_ids") or [])
+        if left.attr == "scheme":
+            if isinstance(op, ast.NotEq) and _const_str(right) == "https":
+                return (url_var, input_ids)
+            if isinstance(op, ast.Eq) and _const_str(right) == "http":
+                return (url_var, input_ids)
+        if left.attr == "hostname" and isinstance(op, ast.NotIn):
+            return (url_var, input_ids)
+        return None
+
+    def _url_destination_validated(
+        self,
+        url_node: ast.AST | None,
+        input_ids: list[str],
+    ) -> bool:
+        if isinstance(url_node, ast.Name) and url_node.id in self.validated_url_vars:
+            return True
+        if input_ids and set(input_ids).issubset(self.validated_url_input_ids):
+            return True
+        return False
+
     def _observe_data_access_call(self, node: ast.Call) -> None:
         if not isinstance(node.func, ast.Attribute):
             return
@@ -908,7 +1074,14 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             binding = self.lookup(node.id)
             if binding and binding[0] == "local_session":
                 return None
-            if binding and binding[0] in {"http_client", "http_module", "container", "upload", "upload_container", "input"}:
+            if binding and binding[0] in {
+                "http_client",
+                "http_module",
+                "container",
+                "upload",
+                "upload_container",
+                "input",
+            }:
                 return None
             if binding and binding[0] == "framework_session":
                 return binding[1]
@@ -1238,17 +1411,20 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         )
 
     def _emit_network_fact(self, node: ast.Call, spec: dict) -> None:
+        attrs = {
+            "api": spec["api"],
+            "method": spec["method"],
+            "destination_kind": spec["destination_kind"],
+            "uses_input_source_ids": list(spec["uses_input_source_ids"]),
+            "server_side": True,
+            "module": spec["module"],
+        }
+        if spec.get("destination_validated"):
+            attrs["destination_validated"] = True
         self._emit_fact(
             node,
             kind="network_request",
-            attrs={
-                "api": spec["api"],
-                "method": spec["method"],
-                "destination_kind": spec["destination_kind"],
-                "uses_input_source_ids": list(spec["uses_input_source_ids"]),
-                "server_side": True,
-                "module": spec["module"],
-            },
+            attrs=attrs,
         )
 
     def _emit_fact(self, node: ast.AST, *, kind: str, attrs: dict) -> Fact:
@@ -1416,6 +1592,58 @@ def _looks_like_html(node: ast.AST | None) -> bool:
     for child in ast.walk(node):
         text = _const_str(child)
         if text and HTML_MARKUP_PATTERN.search(text):
+            return True
+    return False
+
+
+def _has_html_attribute_sink(node: ast.AST | None) -> bool:
+    if node is None:
+        return False
+    for child in ast.walk(node):
+        text = _const_str(child)
+        if text and HTML_ATTR_SINK_PATTERN.search(text):
+            return True
+    return False
+
+
+def _is_urlparse_call(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    name = _callee_name(node.func)
+    if name == "urlparse":
+        return True
+    chain = _attr_chain(node.func)
+    return chain is not None and chain[-1] == "urlparse"
+
+
+def _if_body_aborts(body: list[ast.stmt]) -> bool:
+    for stmt in body:
+        if isinstance(stmt, ast.Raise):
+            return True
+        call: ast.Call | None = None
+        if isinstance(stmt, ast.Call):
+            call = stmt
+        elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+            call = stmt.value
+        if call is not None and _callee_name(call.func) in ABORT_APIS:
+            return True
+    return False
+
+
+def _urlparse_url_var(node: ast.AST | None) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Or):
+        return _urlparse_url_var(node.left)
+    return None
+
+
+def _endswith_executable_rejection_test(test: ast.AST) -> bool:
+    for node in ast.walk(test):
+        if not isinstance(node, ast.Call):
+            continue
+        policy = _extension_policy_from_endswith(node)
+        if policy == "allow_executable":
             return True
     return False
 
