@@ -1,0 +1,908 @@
+{
+  "version": "1.0",
+  "description": "Unseen Holdout #4 \u2014 final blind evaluation before V1 release gate",
+  "scanner": "analyze_source",
+  "checkpoint": "763cb97",
+  "cases": [
+    {
+      "id": "u4_sqli_v_percent_execute_name",
+      "path": "corpus/sql_injection/u4_sqli_v_percent_execute_name.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Percent-formatting embeds request name into SQL before execute."
+    },
+    {
+      "id": "u4_sqli_v_fstring_delete_ticket",
+      "path": "corpus/sql_injection/u4_sqli_v_fstring_delete_ticket.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "f-string DELETE interpolates user ticket id into SQL."
+    },
+    {
+      "id": "u4_sqli_v_order_concat_col",
+      "path": "corpus/sql_injection/u4_sqli_v_order_concat_col.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "ORDER BY column name concatenated from query string."
+    },
+    {
+      "id": "u4_sqli_v_where_list_join",
+      "path": "corpus/sql_injection/u4_sqli_v_where_list_join.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Literal list of WHERE pieces joined; user status spliced into SQL."
+    },
+    {
+      "id": "u4_sqli_v_objects_raw_sku",
+      "path": "corpus/sql_injection/u4_sqli_v_objects_raw_sku.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Django objects.raw with f-string containing user SKU."
+    },
+    {
+      "id": "u4_sqli_v_session_concat_ref",
+      "path": "corpus/sql_injection/u4_sqli_v_session_concat_ref.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "SQLAlchemy session.execute runs concatenated SQL with user ref."
+    },
+    {
+      "id": "u4_sqli_v_cursor_plus_email",
+      "path": "corpus/sql_injection/u4_sqli_v_cursor_plus_email.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "cursor.execute builds SELECT with + concatenation of form email."
+    },
+    {
+      "id": "u4_sqli_v_conditional_fragment",
+      "path": "corpus/sql_injection/u4_sqli_v_conditional_fragment.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Optional user-supplied SQL fragment appended after a parameterized base."
+    },
+    {
+      "id": "u4_sqli_v_alias_like_chain",
+      "path": "corpus/sql_injection/u4_sqli_v_alias_like_chain.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Alias chain and multi-hop vars feed user term into LIKE concatenation."
+    },
+    {
+      "id": "u4_sqli_v_format_select_uid",
+      "path": "corpus/sql_injection/u4_sqli_v_format_select_uid.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "str.format embeds user uid into SELECT before execute."
+    },
+    {
+      "id": "u4_sqli_s_param_tuple_email",
+      "path": "corpus/sql_injection/u4_sqli_s_param_tuple_email.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Parameterized tuple keeps user email out of SQL text."
+    },
+    {
+      "id": "u4_sqli_s_named_bind_order",
+      "path": "corpus/sql_injection/u4_sqli_s_named_bind_order.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Named bind parameter for order id; SQL string is static."
+    },
+    {
+      "id": "u4_sqli_s_order_allowlist_map",
+      "path": "corpus/sql_injection/u4_sqli_s_order_allowlist_map.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "ORDER BY taken only from allowlist map, not raw request value."
+    },
+    {
+      "id": "u4_sqli_s_static_select_active",
+      "path": "corpus/sql_injection/u4_sqli_s_static_select_active.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Static SQL only; request hint is unused in the query."
+    },
+    {
+      "id": "u4_sqli_s_orm_filter_owner",
+      "path": "corpus/sql_injection/u4_sqli_s_orm_filter_owner.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "ORM filter with static field names and session user id."
+    },
+    {
+      "id": "u4_sqli_s_raw_params_list",
+      "path": "corpus/sql_injection/u4_sqli_s_raw_params_list.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "objects.raw with placeholder and params list."
+    },
+    {
+      "id": "u4_sqli_s_logged_input_static",
+      "path": "corpus/sql_injection/u4_sqli_s_logged_input_static.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "User input only logged; executed SQL is fully static."
+    },
+    {
+      "id": "u4_sqli_s_executemany_static",
+      "path": "corpus/sql_injection/u4_sqli_s_executemany_static.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "executemany with static INSERT and bound row params."
+    },
+    {
+      "id": "u4_sqli_s_whitelist_table_map",
+      "path": "corpus/sql_injection/u4_sqli_s_whitelist_table_map.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Table name resolved via whitelist map before concatenation."
+    },
+    {
+      "id": "u4_sqli_s_bindparams_style",
+      "path": "corpus/sql_injection/u4_sqli_s_bindparams_style.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "SQLAlchemy text().bindparams binds user ref safely."
+    },
+    {
+      "id": "u4_xss_v_fstring_banner_html",
+      "path": "corpus/xss/u4_xss_v_fstring_banner_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "f-string HTML reflects query who without escaping."
+    },
+    {
+      "id": "u4_xss_v_concat_div_msg",
+      "path": "corpus/xss/u4_xss_v_concat_div_msg.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User message concatenated into HTML div."
+    },
+    {
+      "id": "u4_xss_v_render_template_string",
+      "path": "corpus/xss/u4_xss_v_render_template_string.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "render_template_string marks user body as safe HTML."
+    },
+    {
+      "id": "u4_xss_v_markup_percent_title",
+      "path": "corpus/xss/u4_xss_v_markup_percent_title.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "Markup percent-formats user title into HTML."
+    },
+    {
+      "id": "u4_xss_v_httpresponse_concat",
+      "path": "corpus/xss/u4_xss_v_httpresponse_concat.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "Django HttpResponse concatenates user note into HTML."
+    },
+    {
+      "id": "u4_xss_v_href_attr_concat",
+      "path": "corpus/xss/u4_xss_v_href_attr_concat.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "href attribute built by concatenating user next URL."
+    },
+    {
+      "id": "u4_xss_v_multihop_return_html",
+      "path": "corpus/xss/u4_xss_v_multihop_return_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "Multi-hop assignment carries user label into returned HTML."
+    },
+    {
+      "id": "u4_xss_v_join_middle_user",
+      "path": "corpus/xss/u4_xss_v_join_middle_user.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User name placed in middle of HTML list then joined."
+    },
+    {
+      "id": "u4_xss_v_make_response_html",
+      "path": "corpus/xss/u4_xss_v_make_response_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "make_response returns HTML with reflected status."
+    },
+    {
+      "id": "u4_xss_v_error_page_reflect",
+      "path": "corpus/xss/u4_xss_v_error_page_reflect.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "Error page reflects user err detail in HTML pre block."
+    },
+    {
+      "id": "u4_xss_s_jsonify_profile",
+      "path": "corpus/xss/u4_xss_s_jsonify_profile.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "jsonify returns JSON, not HTML reflection."
+    },
+    {
+      "id": "u4_xss_s_escape_then_concat",
+      "path": "corpus/xss/u4_xss_s_escape_then_concat.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "escape applied before concatenating into HTML."
+    },
+    {
+      "id": "u4_xss_s_bleach_clean_bio",
+      "path": "corpus/xss/u4_xss_s_bleach_clean_bio.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "bleach.clean sanitizes bio before HTML wrap."
+    },
+    {
+      "id": "u4_xss_s_static_markup_banner",
+      "path": "corpus/xss/u4_xss_s_static_markup_banner.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Static Markup string; campaign query unused in output."
+    },
+    {
+      "id": "u4_xss_s_render_template_file",
+      "path": "corpus/xss/u4_xss_s_render_template_file.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "File-based render_template; autoescape handles title."
+    },
+    {
+      "id": "u4_xss_s_redirect_only",
+      "path": "corpus/xss/u4_xss_s_redirect_only.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Redirect response only; no HTML body with user data."
+    },
+    {
+      "id": "u4_xss_s_log_static_html",
+      "path": "corpus/xss/u4_xss_s_log_static_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "User note logged only; returned HTML is static."
+    },
+    {
+      "id": "u4_xss_s_escape_fstring",
+      "path": "corpus/xss/u4_xss_s_escape_fstring.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "f-string HTML uses escape around user who."
+    },
+    {
+      "id": "u4_xss_s_no_html_output",
+      "path": "corpus/xss/u4_xss_s_no_html_output.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "No HTML response body; input used only for metrics."
+    },
+    {
+      "id": "u4_xss_s_template_static_ctx",
+      "path": "corpus/xss/u4_xss_s_template_static_ctx.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Template rendered with static context only."
+    },
+    {
+      "id": "u4_ssrf_v_requests_get_callback",
+      "path": "corpus/ssrf/u4_ssrf_v_requests_get_callback.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "requests.get with user-controlled callback URL."
+    },
+    {
+      "id": "u4_ssrf_v_requests_post_notify",
+      "path": "corpus/ssrf/u4_ssrf_v_requests_post_notify.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "requests.post to user-supplied notify URL."
+    },
+    {
+      "id": "u4_ssrf_v_httpx_get_feed",
+      "path": "corpus/ssrf/u4_ssrf_v_httpx_get_feed.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "httpx.get on user feed URL."
+    },
+    {
+      "id": "u4_ssrf_v_urlopen_resource",
+      "path": "corpus/ssrf/u4_ssrf_v_urlopen_resource.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "urllib.request.urlopen on form resource URL."
+    },
+    {
+      "id": "u4_ssrf_v_session_get_probe",
+      "path": "corpus/ssrf/u4_ssrf_v_session_get_probe.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "requests.Session().get with user peer URL."
+    },
+    {
+      "id": "u4_ssrf_v_fstring_service_url",
+      "path": "corpus/ssrf/u4_ssrf_v_fstring_service_url.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "f-string embeds user service host into GET URL."
+    },
+    {
+      "id": "u4_ssrf_v_concat_base_path",
+      "path": "corpus/ssrf/u4_ssrf_v_concat_base_path.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "Concatenated user base URL then GET."
+    },
+    {
+      "id": "u4_ssrf_v_json_callback_hook",
+      "path": "corpus/ssrf/u4_ssrf_v_json_callback_hook.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "JSON callback_hook opened via urllib."
+    },
+    {
+      "id": "u4_ssrf_v_form_egress_target",
+      "path": "corpus/ssrf/u4_ssrf_v_form_egress_target.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "Form egress drives server-side POST."
+    },
+    {
+      "id": "u4_ssrf_v_alias_req_get",
+      "path": "corpus/ssrf/u4_ssrf_v_alias_req_get.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "Aliased requests import plus multi-hop into get."
+    },
+    {
+      "id": "u4_ssrf_s_literal_uptime_url",
+      "path": "corpus/ssrf/u4_ssrf_s_literal_uptime_url.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Literal fixed uptime URL only."
+    },
+    {
+      "id": "u4_ssrf_s_hostname_notin_abort",
+      "path": "corpus/ssrf/u4_ssrf_s_hostname_notin_abort.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Hostname allowlist via NotIn then abort before fetch."
+    },
+    {
+      "id": "u4_ssrf_s_https_startswith_raise",
+      "path": "corpus/ssrf/u4_ssrf_s_https_startswith_raise.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "https:// startswith guard with raise before fetch."
+    },
+    {
+      "id": "u4_ssrf_s_parse_components_only",
+      "path": "corpus/ssrf/u4_ssrf_s_parse_components_only.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "urlparse only; no outbound network call."
+    },
+    {
+      "id": "u4_ssrf_s_client_redirect_only",
+      "path": "corpus/ssrf/u4_ssrf_s_client_redirect_only.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Client redirect only \u2014 not server-side SSRF."
+    },
+    {
+      "id": "u4_ssrf_s_jsonify_url_echo",
+      "path": "corpus/ssrf/u4_ssrf_s_jsonify_url_echo.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "JSON echo of URL; no outbound request."
+    },
+    {
+      "id": "u4_ssrf_s_log_user_static_get",
+      "path": "corpus/ssrf/u4_ssrf_s_log_user_static_get.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "User value logged; fetch uses static URL."
+    },
+    {
+      "id": "u4_ssrf_s_fixed_release_concat",
+      "path": "corpus/ssrf/u4_ssrf_s_fixed_release_concat.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Fixed base + fixed path concat; no user input."
+    },
+    {
+      "id": "u4_ssrf_s_private_prefix_bound_host",
+      "path": "corpus/ssrf/u4_ssrf_s_private_prefix_bound_host.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Bound hostname private-prefix block before fetch."
+    },
+    {
+      "id": "u4_ssrf_s_scheme_bound_https_gate",
+      "path": "corpus/ssrf/u4_ssrf_s_scheme_bound_https_gate.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Bound parsed.scheme NotEq https aborts before fetch."
+    },
+    {
+      "id": "u4_upload_v_save_html_filename",
+      "path": "corpus/file_upload/u4_upload_v_save_html_filename.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": ".save under webroot using user filename."
+    },
+    {
+      "id": "u4_upload_v_shutil_copy_wwwroot",
+      "path": "corpus/file_upload/u4_upload_v_shutil_copy_wwwroot.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "shutil.copy into /var/www with user filename."
+    },
+    {
+      "id": "u4_upload_v_open_write_static",
+      "path": "corpus/file_upload/u4_upload_v_open_write_static.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "open().write under webroot with user name."
+    },
+    {
+      "id": "u4_upload_v_path_write_bytes_media",
+      "path": "corpus/file_upload/u4_upload_v_path_write_bytes_media.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Path.write_bytes under html media with user fn."
+    },
+    {
+      "id": "u4_upload_v_fstring_uploads_path",
+      "path": "corpus/file_upload/u4_upload_v_fstring_uploads_path.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "f-string upload path under html with user fn."
+    },
+    {
+      "id": "u4_upload_v_os_join_html_files",
+      "path": "corpus/file_upload/u4_upload_v_os_join_html_files.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "os.path.join webroot then save user filename."
+    },
+    {
+      "id": "u4_upload_v_double_alias_web_save",
+      "path": "corpus/file_upload/u4_upload_v_double_alias_web_save.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Double alias filename chain saved under webroot."
+    },
+    {
+      "id": "u4_upload_v_concat_dest_folder",
+      "path": "corpus/file_upload/u4_upload_v_concat_dest_folder.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Form folder concatenated with user filename."
+    },
+    {
+      "id": "u4_upload_v_public_html_drop",
+      "path": "corpus/file_upload/u4_upload_v_public_html_drop.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Public html path with user-controlled name."
+    },
+    {
+      "id": "u4_upload_v_copyfile_into_html",
+      "path": "corpus/file_upload/u4_upload_v_copyfile_into_html.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "shutil.copyfile into webroot with user name."
+    },
+    {
+      "id": "u4_upload_s_token_hex_data_dir",
+      "path": "corpus/file_upload/u4_upload_s_token_hex_data_dir.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "secrets.token_hex destination stored off webroot."
+    },
+    {
+      "id": "u4_upload_s_uuid_payload_offweb",
+      "path": "corpus/file_upload/u4_upload_s_uuid_payload_offweb.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "UUID subdir with fixed payload name off webroot."
+    },
+    {
+      "id": "u4_upload_s_reject_exec_random",
+      "path": "corpus/file_upload/u4_upload_s_reject_exec_random.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Reject executables then save random name under /data."
+    },
+    {
+      "id": "u4_upload_s_hash_only_digest",
+      "path": "corpus/file_upload/u4_upload_s_hash_only_digest.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Hash only; no file persist."
+    },
+    {
+      "id": "u4_upload_s_fixed_logo_basename",
+      "path": "corpus/file_upload/u4_upload_s_fixed_logo_basename.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Fixed basename destination, not user-controlled."
+    },
+    {
+      "id": "u4_upload_s_image_whitelist_random",
+      "path": "corpus/file_upload/u4_upload_s_image_whitelist_random.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Image whitelist plus random name off webroot."
+    },
+    {
+      "id": "u4_upload_s_content_type_pdf_rand",
+      "path": "corpus/file_upload/u4_upload_s_content_type_pdf_rand.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Content-type pdf gate + random destination name."
+    },
+    {
+      "id": "u4_upload_s_private_token_hex_save",
+      "path": "corpus/file_upload/u4_upload_s_private_token_hex_save.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Save off webroot with token_hex name."
+    },
+    {
+      "id": "u4_upload_s_fixed_archive_name",
+      "path": "corpus/file_upload/u4_upload_s_fixed_archive_name.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Outside webroot with fixed destination name."
+    },
+    {
+      "id": "u4_upload_s_path_token_write",
+      "path": "corpus/file_upload/u4_upload_s_path_token_write.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Path write with token_hex name off webroot."
+    },
+    {
+      "id": "u4_idor_v_objects_get_order_id",
+      "path": "corpus/idor/u4_idor_v_objects_get_order_id.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "ORM get via pk from query param without ownership check."
+    },
+    {
+      "id": "u4_idor_v_filter_user_id_param",
+      "path": "corpus/idor/u4_idor_v_filter_user_id_param.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "filter(user_id=) from query param."
+    },
+    {
+      "id": "u4_idor_v_filter_username_lookup",
+      "path": "corpus/idor/u4_idor_v_filter_username_lookup.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "filter(username=) without session bind."
+    },
+    {
+      "id": "u4_idor_v_filter_email_lookup",
+      "path": "corpus/idor/u4_idor_v_filter_email_lookup.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "filter(email=) fetches arbitrary customer."
+    },
+    {
+      "id": "u4_idor_v_db_query_item_key",
+      "path": "corpus/idor/u4_idor_v_db_query_item_key.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "db.query keyed by user-supplied key."
+    },
+    {
+      "id": "u4_idor_v_json_document_id",
+      "path": "corpus/idor/u4_idor_v_json_document_id.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "JSON dossier_uuid selects resource without authz."
+    },
+    {
+      "id": "u4_idor_v_nested_json_owner",
+      "path": "corpus/idor/u4_idor_v_nested_json_owner.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Nested json meta.owner_id used as identity."
+    },
+    {
+      "id": "u4_idor_v_form_invoice_delete",
+      "path": "corpus/idor/u4_idor_v_form_invoice_delete.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Form note_id delete without owner verification."
+    },
+    {
+      "id": "u4_idor_v_multihop_objects_get",
+      "path": "corpus/idor/u4_idor_v_multihop_objects_get.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Multi-hop assignment into objects.get."
+    },
+    {
+      "id": "u4_idor_v_ticket_key_filter",
+      "path": "corpus/idor/u4_idor_v_ticket_key_filter.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "ticket_key from args drives filter without ownership."
+    },
+    {
+      "id": "u4_idor_s_session_owner_filter",
+      "path": "corpus/idor/u4_idor_s_session_owner_filter.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Session-scoped owner filter; no client identity key."
+    },
+    {
+      "id": "u4_idor_s_ownership_raise_guard",
+      "path": "corpus/idor/u4_idor_s_ownership_raise_guard.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Load by id then enforce user_id == g.user.id."
+    },
+    {
+      "id": "u4_idor_s_g_user_compare",
+      "path": "corpus/idor/u4_idor_s_g_user_compare.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "g.user ownership compare before return."
+    },
+    {
+      "id": "u4_idor_s_admin_is_admin_gate",
+      "path": "corpus/idor/u4_idor_s_admin_is_admin_gate.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Admin is_admin gate before broad listing."
+    },
+    {
+      "id": "u4_idor_s_current_user_profile",
+      "path": "corpus/idor/u4_idor_s_current_user_profile.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Settings scoped to current_user.id only."
+    },
+    {
+      "id": "u4_idor_s_static_slug_terms",
+      "path": "corpus/idor/u4_idor_s_static_slug_terms.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Static slug identity; not user-controlled."
+    },
+    {
+      "id": "u4_idor_s_public_filter_flag",
+      "path": "corpus/idor/u4_idor_s_public_filter_flag.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Public filter only; no user identity key."
+    },
+    {
+      "id": "u4_idor_s_aggregate_count",
+      "path": "corpus/idor/u4_idor_s_aggregate_count.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Aggregate count; no per-object identity access."
+    },
+    {
+      "id": "u4_idor_s_log_only_access",
+      "path": "corpus/idor/u4_idor_s_log_only_access.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Log-only of target id; no object fetch."
+    },
+    {
+      "id": "u4_idor_s_get_then_owner_check",
+      "path": "corpus/idor/u4_idor_s_get_then_owner_check.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Get then owner check before return."
+    }
+  ]
+}
