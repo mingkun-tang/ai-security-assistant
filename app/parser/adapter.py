@@ -112,10 +112,10 @@ def _apply_network_signals(signals: dict, facts: list[Fact]) -> None:
     for fact in facts:
         if fact.attrs.get("destination_validated"):
             continue
-        destination_kind = fact.attrs.get("destination_kind")
-        if destination_kind in {"from_input", "concat", "fstring", "format"}:
-            signals["network"]["user_controlled_url"] = True
-        if fact.attrs.get("uses_input_source_ids"):
+        # Require actual input taint — literal path concat/f-string is not SSRF.
+        if fact.attrs.get("uses_input_source_ids") or fact.attrs.get(
+            "destination_kind"
+        ) == "from_input":
             signals["network"]["user_controlled_url"] = True
 
 
@@ -143,9 +143,11 @@ def _upload_fact_is_dangerous(fact: Fact) -> bool:
     saved_to_web_root = fact.attrs.get("saved_to_web_root")
     if filename_controlled == "no" and saved_to_web_root != "yes":
         return False
+    # User-controlled persist path remains dangerous (path traversal / overwrite),
+    # even when the destination is outside a known web root.
     if filename_controlled == "yes" or saved_to_web_root == "yes":
         return True
-    if policy in {None, "unknown"}:
+    if policy in {None, "unknown", "unchecked"}:
         return filename_controlled == "yes" or saved_to_web_root == "yes"
     return policy == "allow_executable"
 
@@ -203,9 +205,10 @@ def _apply_access_signals(
 
     targets = list(dict.fromkeys(targets))
 
-    if keyed_access and not has_ownership_check:
+    authorized = has_ownership_check or has_role_check
+    if keyed_access and not authorized:
         ownership["other_user"] = True
-    if has_ownership_check:
+    if authorized:
         ownership["self_reference"] = True
         ownership["other_user"] = False
     if any(fact.attrs.get("role_mutation") for fact in data_facts) and not has_role_check:

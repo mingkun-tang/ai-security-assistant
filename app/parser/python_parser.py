@@ -43,6 +43,7 @@ DB_API_NAMES = {
     "execute": "execute",
     "executemany": "executemany",
     "raw": "raw",
+    "extra": "extra",
 }
 SQL_KEYWORD_PATTERN = re.compile(
     r"\b(?:select|insert|update|delete|from|where|join|drop|table|"
@@ -74,18 +75,40 @@ ESCAPE_APIS = {"escape", "html_escape", "format_html"}
 TEMPLATE_RECEIVER_NAMES = {"template", "tmpl", "jinja"}
 TEMPLATE_SUFFIXES = (".html", ".htm", ".jinja", ".jinja2", ".j2")
 HTTP_METHOD_APIS = {"get", "post", "put", "patch", "delete", "request"}
-HTTP_MODULE_NAMES = {"requests": "requests", "httpx": "httpx"}
+HTTP_MODULE_NAMES = {
+    "requests": "requests",
+    "httpx": "httpx",
+    "aiohttp": "aiohttp",
+}
 HTTP_CLIENT_CTORS = {
     "Session": "requests",
     "session": "requests",
     "Client": "httpx",
     "AsyncClient": "httpx",
+    "ClientSession": "aiohttp",
 }
 BARE_NETWORK_APIS = {
     "urlopen": ("urllib.request", "urlopen", None),
     "HTTPConnection": ("http.client", "HTTPConnection", None),
     "HTTPSConnection": ("http.client", "HTTPSConnection", None),
 }
+FILESYSTEM_WRITE_ATTRS = {"write", "write_bytes", "write_text", "writelines"}
+FILESYSTEM_COPY_APIS = {"copy", "copy2", "copyfile", "move", "rename"}
+COLLECTION_MUTATORS = {"append", "extend", "insert"}
+PRIVATE_HOST_PREFIXES = ("10.", "192.168.", "127.", "169.254.", "0.")
+ROLE_ATTRS = {"is_admin", "is_staff", "is_superuser", "admin"}
+IDENTITY_NAME_TOKENS = frozenset(
+    {
+        "username",
+        "login",
+        "email",
+        "uuid",
+        "pk",
+        "slug",
+        "handle",
+    }
+)
+IDENTITY_SUFFIXES = ("_id", "_uuid", "_pk", "_key")
 UPLOAD_CONTAINER_ATTRS = {
     "files": "flask",
     "FILES": "django",
@@ -111,15 +134,19 @@ WEB_ROOT_FRAGMENTS = (
     "media/",
     "/media",
     "webroot",
+    "/var/www",
+    "www/html",
+    "/cgi-bin",
+    "cgi-bin/",
 )
 NON_WEB_ROOT_FRAGMENTS = ("/var/", "/tmp/", "/opt/", "/home/", "/private/")
 AUTH_HEADER_NAMES = {"authorization", "http_authorization"}
 JWT_DECODE_APIS = {"decode_jwt", "verify_token", "decode_access_token"}
 LOGIN_GUARD_APIS = {"login_required"}
-DATA_ACCESS_APIS = {"get", "filter", "filter_by", "first"}
+DATA_ACCESS_APIS = {"get", "filter", "filter_by", "first", "query"}
 USER_RESOURCE_NAMES = {"user", "User", "profile", "Profile", "account", "email"}
 OWNERSHIP_ATTRS = {"id", "owner_id", "user_id", "owner", "account_id"}
-IDENTITY_NAMES = {"current_user", "request", "session"}
+IDENTITY_NAMES = {"current_user", "request", "session", "g"}
 IDENTITY_FILTER_KEYWORDS = frozenset(
     {
         "id",
@@ -135,6 +162,8 @@ IDENTITY_FILTER_KEYWORDS = frozenset(
         "uid",
         "owner",
         "user",
+        "username",
+        "login",
     }
 )
 
@@ -239,6 +268,8 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self.validated_url_vars: set[str] = set()
         self.validated_url_input_ids: set[str] = set()
         self.module_import_aliases: dict[str, str] = {}
+        self.html_fragment_names: set[str] = set()
+        self.upload_seen: bool = False
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -268,6 +299,9 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             return
         if module_path.startswith("urllib"):
             self.module_import_aliases[bind_name] = "urllib.request"
+            return
+        if module_path == "aiohttp" or module_path.startswith("aiohttp."):
+            self.module_import_aliases[bind_name] = "aiohttp"
 
     def visit(self, node: ast.AST):
         if not self._parents:
@@ -324,6 +358,8 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self.extension_policies.append(None)
         self.validated_url_vars = set()
         self.validated_url_input_ids = set()
+        self.html_fragment_names = set()
+        self.upload_seen = False
         for arg in node.args.args:
             if arg.arg == "session":
                 self.scopes[-1][arg.arg] = ("local_session", None)
@@ -359,11 +395,13 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         if _if_body_aborts(node.body):
             self._observe_url_validation_if(node)
+            self._observe_role_gate_if(node)
             if _endswith_executable_rejection_test(node.test):
                 self.extension_policies[-1] = "reject_executable"
 
     def visit_Call(self, node: ast.Call) -> None:
         self.generic_visit(node)
+        self._observe_collection_mutation(node)
         spec = self._match_input_call(node)
         if spec is not None:
             self._emit_input_fact(node, spec)
@@ -377,6 +415,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         if network_spec is not None:
             self._emit_network_fact(node, network_spec)
         self._observe_upload_call(node)
+        self._observe_filesystem_write(node)
         self._observe_auth_call(node)
         self._observe_data_access_call(node)
 
@@ -540,9 +579,31 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         if name == "session":
             self.scopes[-1][name] = ("local_session", None)
             return
+        if isinstance(value_node, ast.Call) and _is_open_call(value_node):
+            path_node = _keyword_or_arg(value_node, "file", 0)
+            self.scopes[-1][name] = (
+                "file_handle",
+                {
+                    "path_taint": self._taint_ids_from_expr(path_node),
+                    "filename_controlled": self._filename_user_controlled(path_node),
+                    "saved_to_web_root": _saved_to_web_root(path_node),
+                    "destination_kind": self._save_destination_kind(path_node),
+                },
+            )
+            return
+        if isinstance(value_node, ast.Attribute) and value_node.attr in {
+            "hostname",
+            "netloc",
+        }:
+            host_meta = self._url_host_meta(value_node)
+            if host_meta is not None:
+                self.scopes[-1][name] = ("url_hostname", host_meta)
+                return
         propagated = self._taint_ids_from_expr(value_node)
         if propagated:
             self.scopes[-1][name] = ("tainted", tuple(propagated))
+            if _looks_like_html(value_node) or self._expr_carries_html(value_node):
+                self.html_fragment_names.add(name)
 
     def _imported_http_module(self, name: str) -> str | None:
         if name in HTTP_MODULE_NAMES:
@@ -552,7 +613,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
     def _taint_ids_from_expr(self, node: ast.AST | None) -> list[str]:
         if node is None:
             return []
-        if _is_escape_call(node):
+        if _is_escape_call(node) or _is_sanitizer_call(node):
             return []
         if isinstance(node, ast.Name):
             return _binding_source_ids(self.lookup(node.id))
@@ -580,6 +641,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         if isinstance(node, ast.Attribute):
             if self._expr_is_upload_filename(node):
                 return ["upload:filename"]
+            return self._taint_ids_from_expr(node.value)
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Attribute):
                 if node.func.attr == "get":
@@ -589,17 +651,75 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 if node.func.attr == "join":
                     for arg in node.args:
                         ids.extend(self._taint_ids_from_expr(arg))
+                    # "".join(parts) — also take taint from the joined sequence
+                    if node.args:
+                        ids.extend(self._taint_ids_from_expr(node.args[0]))
                     return _unique_ids(ids)
-            if _is_os_path_join_call(node):
+                if node.func.attr == "joinpath":
+                    ids.extend(self._taint_ids_from_expr(node.func.value))
+                    for arg in node.args:
+                        ids.extend(self._taint_ids_from_expr(arg))
+                    return _unique_ids(ids)
+                if node.func.attr == "format":
+                    ids.extend(self._taint_ids_from_expr(node.func.value))
+                    for arg in node.args:
+                        ids.extend(self._taint_ids_from_expr(arg))
+                    for keyword in node.keywords:
+                        ids.extend(self._taint_ids_from_expr(keyword.value))
+                    return _unique_ids(ids)
+            if _is_os_path_join_call(node) or _is_path_constructor_call(node):
                 for arg in node.args:
                     ids.extend(self._taint_ids_from_expr(arg))
                 return _unique_ids(ids)
         return []
 
+    def _expr_carries_html(self, node: ast.AST | None) -> bool:
+        if node is None:
+            return False
+        if _looks_like_html(node):
+            return True
+        if isinstance(node, ast.Name):
+            return node.id in self.html_fragment_names
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr == "join" and node.args:
+                return self._expr_carries_html(node.args[0])
+        return False
+
+    def _observe_collection_mutation(self, node: ast.Call) -> None:
+        if not isinstance(node.func, ast.Attribute):
+            return
+        if node.func.attr not in COLLECTION_MUTATORS:
+            return
+        if not isinstance(node.func.value, ast.Name):
+            return
+        name = node.func.value.id
+        existing = self.lookup(name)
+        added: list[str] = []
+        added_nodes: list[ast.AST] = []
+        if node.func.attr == "append" and node.args:
+            added = self._taint_ids_from_expr(node.args[0])
+            added_nodes.append(node.args[0])
+        elif node.func.attr == "extend" and node.args:
+            added = self._taint_ids_from_expr(node.args[0])
+            added_nodes.append(node.args[0])
+        elif node.func.attr == "insert" and len(node.args) >= 2:
+            added = self._taint_ids_from_expr(node.args[1])
+            added_nodes.append(node.args[1])
+        merged = _unique_ids(_binding_source_ids(existing) + added)
+        if merged:
+            self.scopes[-1][name] = ("tainted", tuple(merged))
+        if name in self.html_fragment_names or any(
+            self._expr_carries_html(child) for child in added_nodes
+        ):
+            self.html_fragment_names.add(name)
+
     def _match_database_call(self, node: ast.Call) -> dict | None:
         api = _database_api(node.func)
         if api is None:
             return None
+
+        if api == "extra":
+            return self._match_orm_extra_call(node)
 
         sql_expr = _sql_expression(node)
         looks_like_sql = _has_sql_keywords(sql_expr)
@@ -621,6 +741,28 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             "api": api,
             "construction": construction,
             "sql_keywords_present": looks_like_sql,
+            "uses_input_source_ids": input_ids,
+        }
+
+    def _match_orm_extra_call(self, node: ast.Call) -> dict | None:
+        receiver = node.func.value if isinstance(node.func, ast.Attribute) else None
+        if not _is_orm_raw_receiver(receiver):
+            chain = _attr_chain(receiver) if receiver is not None else None
+            if not chain or "objects" not in chain:
+                return None
+        where_nodes: list[ast.AST] = []
+        for keyword in node.keywords:
+            if keyword.arg in {"where", "tables", "select"}:
+                where_nodes.append(keyword.value)
+        if not where_nodes and node.args:
+            where_nodes.extend(node.args)
+        input_ids = self._input_ids_from(*where_nodes)
+        if not input_ids:
+            return None
+        return {
+            "api": "extra",
+            "construction": "concat",
+            "sql_keywords_present": True,
             "uses_input_source_ids": input_ids,
         }
 
@@ -704,6 +846,8 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             return ("http_module", "urllib.request")
         if chain == ["http", "client"]:
             return ("http_module", "http.client")
+        if chain == ["aiohttp"]:
+            return ("http_module", "aiohttp")
         if not isinstance(node, ast.Call):
             return None
         ctor = _callee_name(node.func)
@@ -720,6 +864,9 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 binding = self.lookup(node.func.value.id)
                 if binding and binding[0] in {"http_module", "http_client"}:
                     return ("http_client", binding[1])
+                imported = self._imported_http_module(node.func.value.id)
+                if imported:
+                    return ("http_client", imported)
         return None
 
     def _match_network_call(self, node: ast.Call) -> dict | None:
@@ -765,6 +912,12 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         if not isinstance(func, ast.Attribute):
             return None
         api = func.attr
+        # Inline client construction: Module.ClientSession().get(url)
+        if isinstance(func.value, ast.Call):
+            ctor_binding = self._http_binding(func.value)
+            if ctor_binding and ctor_binding[0] == "http_client" and api in HTTP_METHOD_APIS:
+                method = None if api == "request" else api.upper()
+                return (ctor_binding[1], api, method)
         binding = None
         if isinstance(func.value, ast.Name):
             binding = self.lookup(func.value.id)
@@ -774,13 +927,13 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             imported = self._imported_http_module(func.value.id)
             if imported == "urllib.request" and api == "urlopen":
                 return ("urllib.request", "urlopen", None)
-            if imported in {"requests", "httpx"} and api in HTTP_METHOD_APIS:
+            if imported in {"requests", "httpx", "aiohttp"} and api in HTTP_METHOD_APIS:
                 method = None if api == "request" else api.upper()
                 return (imported, api, method)
         if not (binding and binding[0] in {"http_module", "http_client"}):
             return None
         module = binding[1]
-        if api in HTTP_METHOD_APIS and module in {"requests", "httpx"}:
+        if api in HTTP_METHOD_APIS and module in {"requests", "httpx", "aiohttp"}:
             method = None if api == "request" else api.upper()
             return (module, api, method)
         if api == "urlopen" and module == "urllib.request":
@@ -848,6 +1001,98 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         if policy is not None and self._endswith_targets_upload(node):
             self.extension_policies[-1] = policy
 
+    def _observe_filesystem_write(self, node: ast.Call) -> None:
+        """Observe generic filesystem-write sink family (not only upload.save)."""
+
+        if isinstance(node.func, ast.Attribute) and node.func.attr in FILESYSTEM_WRITE_ATTRS:
+            receiver = node.func.value
+            path_node: ast.AST | None = None
+            filename_controlled = "unknown"
+            saved_to_web_root = "unknown"
+            destination_kind = "unknown"
+            if isinstance(receiver, ast.Name):
+                binding = self.lookup(receiver.id)
+                if binding and binding[0] == "file_handle":
+                    meta = binding[1]
+                    filename_controlled = meta.get("filename_controlled", "unknown")
+                    saved_to_web_root = meta.get("saved_to_web_root", "unknown")
+                    destination_kind = meta.get("destination_kind", "unknown")
+                    path_taint = list(meta.get("path_taint") or [])
+                else:
+                    return
+            elif isinstance(receiver, ast.Call) and _is_open_call(receiver):
+                path_node = _keyword_or_arg(receiver, "file", 0)
+                filename_controlled = self._filename_user_controlled(path_node)
+                saved_to_web_root = _saved_to_web_root(path_node)
+                destination_kind = self._save_destination_kind(path_node)
+                path_taint = self._taint_ids_from_expr(path_node)
+            elif isinstance(receiver, ast.Call) and isinstance(receiver.func, ast.Attribute):
+                # Path(...).joinpath(...).write_bytes(...)
+                if receiver.func.attr == "joinpath":
+                    path_node = receiver
+                    filename_controlled = self._filename_user_controlled(path_node)
+                    saved_to_web_root = _saved_to_web_root(path_node)
+                    destination_kind = self._save_destination_kind(path_node)
+                    path_taint = self._taint_ids_from_expr(path_node)
+                else:
+                    return
+            elif isinstance(receiver, ast.Call) and _is_path_constructor_call(receiver):
+                path_node = receiver
+                filename_controlled = self._filename_user_controlled(path_node)
+                saved_to_web_root = _saved_to_web_root(path_node)
+                destination_kind = self._save_destination_kind(path_node)
+                path_taint = self._taint_ids_from_expr(path_node)
+            elif isinstance(receiver, ast.Attribute):
+                return
+            else:
+                return
+            if filename_controlled != "yes" and "upload:filename" not in path_taint:
+                return
+            policy = self.extension_policies[-1] or (
+                "unchecked" if filename_controlled == "yes" else "unknown"
+            )
+            self._emit_file_upload_fact(
+                node,
+                framework=None,
+                field_name=None,
+                saved=True,
+                save_destination_kind=destination_kind,
+                saved_to_web_root=saved_to_web_root,
+                extension_policy=policy,
+                uses_input_source_ids=[i for i in path_taint if i != "upload:filename"],
+                filename_user_controlled=filename_controlled,
+            )
+            return
+
+        api = _callee_name(node.func)
+        if api not in FILESYSTEM_COPY_APIS:
+            return
+        # shutil.copy / copyfile / move — destination matters
+        dest = _keyword_or_arg(node, "dst", 1)
+        src = _keyword_or_arg(node, "src", 0)
+        if dest is None:
+            return
+        involves_upload = self._is_upload_expr(src) if src is not None else False
+        filename_controlled = self._filename_user_controlled(dest)
+        if not involves_upload and filename_controlled != "yes" and not self.upload_seen:
+            return
+        if involves_upload and filename_controlled == "unknown":
+            filename_controlled = "yes"
+        policy = self.extension_policies[-1] or (
+            "unchecked" if filename_controlled == "yes" else "unknown"
+        )
+        self._emit_file_upload_fact(
+            node,
+            framework=None,
+            field_name=None,
+            saved=True,
+            save_destination_kind=self._save_destination_kind(dest),
+            saved_to_web_root=_saved_to_web_root(dest),
+            extension_policy=policy,
+            uses_input_source_ids=self._input_ids_from(dest, src),
+            filename_user_controlled=filename_controlled,
+        )
+
     def _is_upload_expr(self, node: ast.AST) -> bool:
         if isinstance(node, ast.Name):
             binding = self.lookup(node.id)
@@ -885,9 +1130,13 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         return {}
 
     def _save_destination_kind(self, node: ast.AST | None) -> str:
-        if (
-            isinstance(node, ast.Call)
-            and _callee_name(node.func) == "join"
+        if isinstance(node, ast.Call) and (
+            _callee_name(node.func) == "join"
+            or (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "joinpath"
+            )
+            or _is_os_path_join_call(node)
         ):
             return "concat"
         construction = _string_construction(node)
@@ -932,6 +1181,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         uses_input_source_ids: list[str] | None = None,
         filename_user_controlled: str = "unknown",
     ) -> None:
+        self.upload_seen = True
         fact = self._emit_fact(
             node,
             kind="file_upload",
@@ -950,12 +1200,12 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self._facts_by_node[id(node)] = fact
 
     def _match_returned_html_output(self, node: ast.AST) -> dict | None:
-        if _is_escape_call(node):
+        if _is_escape_call(node) or _is_sanitizer_call(node):
             return None
         input_ids = self._taint_ids_from_expr(node)
         if not input_ids:
             return None
-        has_html = _looks_like_html(node)
+        has_html = self._expr_carries_html(node) or _looks_like_html(node)
         has_attr_sink = _has_html_attribute_sink(node)
         if not has_html and not has_attr_sink:
             return None
@@ -1005,14 +1255,113 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
 
     def _url_validation_targets_from_test(self, test: ast.AST) -> list[tuple[str | None, list[str]]]:
         results: list[tuple[str | None, list[str]]] = []
-        if isinstance(test, ast.Compare):
-            left: ast.AST = test.left
-            for op, comparator in zip(test.ops, test.comparators):
-                target = self._parsed_url_validation_target(left, op, comparator)
-                if target is not None:
-                    results.append(target)
-                left = comparator
+        nodes = [test]
+        if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+            nodes.append(test.operand)
+        for candidate in nodes:
+            if isinstance(candidate, ast.Compare):
+                left: ast.AST = candidate.left
+                for op, comparator in zip(candidate.ops, candidate.comparators):
+                    target = self._parsed_url_validation_target(left, op, comparator)
+                    if target is not None:
+                        results.append(target)
+                    host_target = self._hostname_binding_validation_target(left, op, comparator)
+                    if host_target is not None:
+                        results.append(host_target)
+                    left = comparator
+            scheme_target = self._scheme_prefix_validation_target(candidate)
+            if scheme_target is not None:
+                results.append(scheme_target)
+            private_target = self._private_host_validation_target(candidate)
+            if private_target is not None:
+                results.append(private_target)
         return results
+
+    def _url_host_meta(self, node: ast.Attribute) -> dict | None:
+        if isinstance(node.value, ast.Name):
+            binding = self.lookup(node.value.id)
+            if binding and binding[0] == "parsed_url":
+                return dict(binding[1])
+        if _is_urlparse_call(node.value):
+            url_arg = node.value.args[0] if node.value.args else None
+            return {
+                "input_ids": self._input_ids_from(url_arg),
+                "url_var": _urlparse_url_var(url_arg),
+            }
+        return None
+
+    def _hostname_binding_validation_target(
+        self,
+        left: ast.AST,
+        op: ast.cmpop,
+        right: ast.AST,
+    ) -> tuple[str | None, list[str]] | None:
+        if not isinstance(left, ast.Name):
+            return None
+        binding = self.lookup(left.id)
+        if not binding or binding[0] != "url_hostname":
+            return None
+        meta = binding[1]
+        url_var = meta.get("url_var")
+        input_ids = list(meta.get("input_ids") or [])
+        if isinstance(op, (ast.NotIn, ast.In)):
+            return (url_var, input_ids)
+        return None
+
+    def _scheme_prefix_validation_target(
+        self,
+        test: ast.AST,
+    ) -> tuple[str | None, list[str]] | None:
+        call = test
+        negated = False
+        if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+            negated = True
+            call = test.operand
+        if not isinstance(call, ast.Call):
+            return None
+        if not isinstance(call.func, ast.Attribute) or call.func.attr != "startswith":
+            return None
+        prefix = _const_str(call.args[0]) if call.args else None
+        if prefix not in {"https://", "https:"}:
+            return None
+        # Strong scheme restriction: reject when NOT https (negated startswith)
+        # or when comparing equality paths handled elsewhere.
+        if not negated and not isinstance(getattr(test, "op", None), ast.Not):
+            # `if url.startswith("https://"): allow` is not by itself a gate on the aborting branch
+            # Aborting body + `if not url.startswith("https://")` is the strong form.
+            return None
+        target = call.func.value
+        url_var = target.id if isinstance(target, ast.Name) else None
+        input_ids = self._input_ids_from(target)
+        if url_var or input_ids:
+            return (url_var, input_ids)
+        return None
+
+    def _private_host_validation_target(
+        self,
+        test: ast.AST,
+    ) -> tuple[str | None, list[str]] | None:
+        call = test
+        if isinstance(test, ast.UnaryOp):
+            return None
+        if not isinstance(call, ast.Call):
+            return None
+        if not isinstance(call.func, ast.Attribute) or call.func.attr != "startswith":
+            return None
+        prefix = _const_str(call.args[0]) if call.args else None
+        if prefix is None or not prefix.startswith(PRIVATE_HOST_PREFIXES):
+            return None
+        host_expr = call.func.value
+        if isinstance(host_expr, ast.Name):
+            binding = self.lookup(host_expr.id)
+            if binding and binding[0] == "url_hostname":
+                meta = binding[1]
+                return (meta.get("url_var"), list(meta.get("input_ids") or []))
+        if isinstance(host_expr, ast.Attribute) and host_expr.attr in {"hostname", "netloc"}:
+            meta = self._url_host_meta(host_expr)
+            if meta is not None:
+                return (meta.get("url_var"), list(meta.get("input_ids") or []))
+        return None
 
     def _parsed_url_validation_target(
         self,
@@ -1020,6 +1369,18 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         op: ast.cmpop,
         right: ast.AST,
     ) -> tuple[str | None, list[str]] | None:
+        # urlparse(x).hostname not in allowlist (inline)
+        if isinstance(left, ast.Attribute) and left.attr in {"hostname", "netloc"}:
+            meta = self._url_host_meta(left)
+            if meta is not None and isinstance(op, (ast.NotIn, ast.In)):
+                return (meta.get("url_var"), list(meta.get("input_ids") or []))
+            if (
+                meta is not None
+                and left.attr == "scheme"
+                and isinstance(op, ast.NotEq)
+                and _const_str(right) == "https"
+            ):
+                return (meta.get("url_var"), list(meta.get("input_ids") or []))
         if not isinstance(left, ast.Attribute) or not isinstance(left.value, ast.Name):
             return None
         binding = self.lookup(left.value.id)
@@ -1031,7 +1392,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         if left.attr == "scheme":
             if isinstance(op, ast.NotEq) and _const_str(right) == "https":
                 return (url_var, input_ids)
-        if left.attr == "hostname" and isinstance(op, ast.NotIn):
+        if left.attr in {"hostname", "netloc"} and isinstance(op, (ast.NotIn, ast.In)):
             return (url_var, input_ids)
         return None
 
@@ -1046,6 +1407,15 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             return True
         return False
 
+    def _observe_role_gate_if(self, node: ast.If) -> None:
+        if not _test_has_role_marker(node.test):
+            return
+        self._emit_authorization_fact(
+            node,
+            check_kind="role",
+            compared_to_session_user=True,
+        )
+
     def _observe_data_access_call(self, node: ast.Call) -> None:
         if not isinstance(node.func, ast.Attribute):
             return
@@ -1059,9 +1429,18 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         chain = _attr_chain(node.func.value) or []
         if _request_suffix(chain) is not None:
             return
-        if "objects" not in chain and "query" not in chain and "manager" not in chain:
-            if not any(part in USER_RESOURCE_NAMES for part in chain):
-                return
+        receiver_name = _receiver_name(node.func.value)
+        is_ormish = (
+            "objects" in chain
+            or "query" in chain
+            or "manager" in chain
+            or any(part in USER_RESOURCE_NAMES for part in chain)
+        )
+        is_db_query = api == "query" and receiver_name is not None and (
+            receiver_name.lower() in DB_RECEIVER_NAMES or receiver_name.lower() == "db"
+        )
+        if not is_ormish and not is_db_query:
+            return
         resource = self._infer_user_resource(chain)
         operation = "read"
         keyed = self._call_keyed_identity_access(node)
@@ -1079,12 +1458,17 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             return False
         api = node.func.attr
         if api == "get":
-            return bool(self._input_ids_from(*node.args, *[kw.value for kw in node.keywords]))
+            return bool(
+                self._input_ids_from(*node.args, *[kw.value for kw in node.keywords])
+            )
+        if api == "query":
+            return bool(
+                self._input_ids_from(*node.args, *[kw.value for kw in node.keywords])
+            )
         if api in {"filter", "filter_by"}:
             for kw in node.keywords:
-                if kw.arg and kw.arg in IDENTITY_FILTER_KEYWORDS:
-                    if self._input_ids_from(kw.value):
-                        return True
+                if _is_identity_access_keyword(kw.arg) and self._input_ids_from(kw.value):
+                    return True
             return False
         if api == "first":
             return bool(self._input_ids_from(*node.args))
@@ -1138,12 +1522,19 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
     def _expr_has_identity_marker(self, node: ast.AST) -> bool:
         if isinstance(node, ast.Name) and node.id in IDENTITY_NAMES:
             return True
+        if isinstance(node, ast.Subscript):
+            if self._is_framework_session(node.value) or (
+                isinstance(node.value, ast.Name) and node.value.id in IDENTITY_NAMES
+            ):
+                return True
         chain = _attr_chain(node)
         if not chain:
             return False
         if any(part in IDENTITY_NAMES for part in chain):
             return True
         if "request" in chain and chain[-1] == "user":
+            return True
+        if "g" in chain and "user" in chain:
             return True
         return False
 
@@ -1584,6 +1975,8 @@ def _binding_source_ids(binding: tuple | None) -> list[str]:
         return [payload]
     if kind == "tainted":
         return list(payload)
+    if kind == "upload_filename":
+        return ["upload:filename"]
     return []
 
 
@@ -1597,11 +1990,55 @@ def _unique_ids(ids: list[str]) -> list[str]:
     return ordered
 
 
+def _is_identity_access_keyword(name: str | None) -> bool:
+    if not name:
+        return False
+    if name in IDENTITY_FILTER_KEYWORDS:
+        return True
+    lowered = name.lower()
+    if lowered in IDENTITY_NAME_TOKENS:
+        return True
+    return any(lowered.endswith(suffix) for suffix in IDENTITY_SUFFIXES)
+
+
 def _is_os_path_join_call(node: ast.Call) -> bool:
     chain = _attr_chain(node.func)
     if chain is None:
         return False
     return chain[-3:] == ["os", "path", "join"] or chain[-2:] == ["path", "join"]
+
+
+def _is_path_constructor_call(node: ast.Call) -> bool:
+    name = _callee_name(node.func)
+    if name == "Path":
+        return True
+    chain = _attr_chain(node.func)
+    return bool(chain and chain[-1] == "Path")
+
+
+def _is_open_call(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    return _callee_name(node.func) == "open"
+
+
+def _is_sanitizer_call(node: ast.AST | None) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    name = _callee_name(node.func)
+    chain = _attr_chain(node.func) or []
+    if name == "clean" and (not chain or chain[0] == "bleach" or "bleach" in chain):
+        return True
+    return False
+
+
+def _test_has_role_marker(test: ast.AST) -> bool:
+    for child in ast.walk(test):
+        if isinstance(child, ast.Attribute) and child.attr in ROLE_ATTRS:
+            return True
+        if isinstance(child, ast.Name) and child.id in ROLE_ATTRS:
+            return True
+    return False
 
 
 def _sql_expression_construction(sql_expr: ast.AST | None, *, has_params: bool) -> str:
