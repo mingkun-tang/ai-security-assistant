@@ -346,6 +346,8 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         self._visit_function(node)
 
     def _visit_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        is_nested = len(self.scopes) >= 2
+        parent_scope = self.scopes[-1] if is_nested else None
         for decorator in node.decorator_list:
             self.visit(decorator)
             self._observe_login_guard(decorator)
@@ -356,6 +358,10 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 self.visit(default)
         self.scopes.append({})
         self.extension_policies.append(None)
+        saved_validated_vars = self.validated_url_vars
+        saved_validated_ids = self.validated_url_input_ids
+        saved_html = self.html_fragment_names
+        saved_upload = self.upload_seen
         self.validated_url_vars = set()
         self.validated_url_input_ids = set()
         self.html_fragment_names = set()
@@ -365,8 +371,16 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 self.scopes[-1][arg.arg] = ("local_session", None)
         for stmt in node.body:
             self.visit(stmt)
+        if is_nested and parent_scope is not None:
+            summary = _summarize_local_function(node)
+            if summary is not None:
+                parent_scope[node.name] = ("local_fn", summary)
         self.scopes.pop()
         self.extension_policies.pop()
+        self.validated_url_vars = saved_validated_vars
+        self.validated_url_input_ids = saved_validated_ids
+        self.html_fragment_names = saved_html
+        self.upload_seen = saved_upload
 
     def visit_Assign(self, node: ast.Assign) -> None:
         self.visit(node.value)
@@ -392,12 +406,42 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                 self._emit_rendered_output_fact(node, spec)
 
     def visit_If(self, node: ast.If) -> None:
-        self.generic_visit(node)
-        if _if_body_aborts(node.body):
+        self.visit(node.test)
+        body_aborts = _if_body_aborts(node.body)
+        orelse_aborts = _if_body_aborts(node.orelse)
+        follow_aborts = (not body_aborts) and self._following_stmt_aborts(node)
+        if body_aborts:
             self._observe_url_validation_if(node)
             self._observe_role_gate_if(node)
             if _endswith_executable_rejection_test(node.test):
                 self.extension_policies[-1] = "reject_executable"
+        elif orelse_aborts or follow_aborts:
+            # Allow-branch may fetch inside the body — mark guards first.
+            self._observe_url_validation_if(node)
+        for stmt in node.body:
+            self.visit(stmt)
+        for stmt in node.orelse:
+            self.visit(stmt)
+
+    def visit_With(self, node: ast.With) -> None:
+        for item in node.items:
+            binding = self._http_binding(item.context_expr)
+            if binding is not None and isinstance(item.optional_vars, ast.Name):
+                self.scopes[-1][item.optional_vars.id] = binding
+        self.generic_visit(node)
+
+    def _following_stmt_aborts(self, node: ast.If) -> bool:
+        parent = self._parents.get(node)
+        body = getattr(parent, "body", None)
+        if not isinstance(body, list):
+            return False
+        try:
+            index = body.index(node)
+        except ValueError:
+            return False
+        if index + 1 >= len(body):
+            return False
+        return _if_body_aborts([body[index + 1]])
 
     def visit_Call(self, node: ast.Call) -> None:
         self.generic_visit(node)
@@ -599,6 +643,20 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             if host_meta is not None:
                 self.scopes[-1][name] = ("url_hostname", host_meta)
                 return
+        if isinstance(value_node, ast.BoolOp) and isinstance(value_node.op, ast.Or):
+            for option in value_node.values:
+                if isinstance(option, ast.Attribute) and option.attr in {
+                    "hostname",
+                    "netloc",
+                }:
+                    host_meta = self._url_host_meta(option)
+                    if host_meta is not None:
+                        self.scopes[-1][name] = ("url_hostname", host_meta)
+                        return
+        sql_frag = self._sql_fragment_from_expr(value_node)
+        if sql_frag is not None:
+            self.scopes[-1][name] = ("sql_fragment", sql_frag)
+            return
         propagated = self._taint_ids_from_expr(value_node)
         if propagated:
             self.scopes[-1][name] = ("tainted", tuple(propagated))
@@ -636,6 +694,10 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             for elt in node.elts:
                 ids.extend(self._taint_ids_from_expr(elt))
             return _unique_ids(ids)
+        if isinstance(node, ast.Dict):
+            for value in node.values:
+                ids.extend(self._taint_ids_from_expr(value))
+            return _unique_ids(ids)
         if isinstance(node, ast.Subscript):
             return self._taint_ids_from_expr(node.value)
         if isinstance(node, ast.Attribute):
@@ -660,18 +722,58 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                     for arg in node.args:
                         ids.extend(self._taint_ids_from_expr(arg))
                     return _unique_ids(ids)
-                if node.func.attr == "format":
+                if node.func.attr in {"format", "format_map"}:
                     ids.extend(self._taint_ids_from_expr(node.func.value))
                     for arg in node.args:
                         ids.extend(self._taint_ids_from_expr(arg))
                     for keyword in node.keywords:
                         ids.extend(self._taint_ids_from_expr(keyword.value))
                     return _unique_ids(ids)
+            if _is_text_call(node):
+                for arg in node.args:
+                    ids.extend(self._taint_ids_from_expr(arg))
+                return _unique_ids(ids)
+            if isinstance(node.func, ast.Name):
+                binding = self.lookup(node.func.id)
+                if binding and binding[0] == "local_fn":
+                    summary = binding[1]
+                    if summary.get("propagates_args"):
+                        for arg in node.args:
+                            ids.extend(self._taint_ids_from_expr(arg))
+                        return _unique_ids(ids)
             if _is_os_path_join_call(node) or _is_path_constructor_call(node):
                 for arg in node.args:
                     ids.extend(self._taint_ids_from_expr(arg))
                 return _unique_ids(ids)
         return []
+
+    def _sql_fragment_from_expr(self, node: ast.AST | None) -> dict | None:
+        if node is None:
+            return None
+        construction, core = _sql_construction_of(node)
+        if construction not in {"concat", "fstring", "format"}:
+            # Local helper call returning constructed SQL
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                binding = self.lookup(node.func.id)
+                if binding and binding[0] == "local_fn":
+                    summary = binding[1]
+                    kind = summary.get("construction")
+                    if kind in {"concat", "fstring", "format"} and summary.get(
+                        "propagates_args"
+                    ):
+                        return {
+                            "construction": kind,
+                            "input_ids": self._taint_ids_from_expr(node),
+                        }
+            return None
+        if not (_has_sql_keywords(node) or _is_text_related(node)):
+            # Still treat dynamic fragments that clearly feed SQL APIs when keywords exist in core
+            if not _has_sql_keywords(core):
+                return None
+        return {
+            "construction": construction,
+            "input_ids": self._taint_ids_from_expr(node),
+        }
 
     def _expr_carries_html(self, node: ast.AST | None) -> bool:
         if node is None:
@@ -728,21 +830,92 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         raw_receiver = _is_orm_raw_receiver(receiver)
 
         if api in {"execute", "executemany"} and not db_receiver and not looks_like_sql:
-            return None
+            # Name-bound SQL fragments may not expose keywords in the Call AST.
+            if not self._expr_is_sql_fragment(sql_expr):
+                return None
         if api == "raw" and not raw_receiver and not looks_like_sql:
             return None
         if sql_expr is None and not db_receiver and api != "raw":
             return None
 
         has_params = _has_query_params(node)
-        construction = _sql_expression_construction(sql_expr, has_params=has_params)
-        input_ids = self._input_ids_from(sql_expr, *node.args[1:], *[kw.value for kw in node.keywords])
+        construction, input_ids = self._resolve_sql_sink(sql_expr, has_params=has_params)
+        extra_ids = self._input_ids_from(
+            *node.args[1:], *[kw.value for kw in node.keywords]
+        )
+        input_ids = _unique_ids(list(input_ids) + list(extra_ids))
+        if not looks_like_sql and construction in {"concat", "fstring", "format"}:
+            looks_like_sql = True
         return {
             "api": api,
             "construction": construction,
             "sql_keywords_present": looks_like_sql,
             "uses_input_source_ids": input_ids,
         }
+
+    def _expr_is_sql_fragment(self, node: ast.AST | None) -> bool:
+        if node is None:
+            return False
+        if isinstance(node, ast.Name):
+            binding = self.lookup(node.id)
+            return bool(binding and binding[0] == "sql_fragment")
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            binding = self.lookup(node.func.id)
+            return bool(
+                binding
+                and binding[0] == "local_fn"
+                and binding[1].get("construction") in {"concat", "fstring", "format"}
+            )
+        construction, _core = _sql_construction_of(node)
+        return construction in {"concat", "fstring", "format"} and (
+            _has_sql_keywords(node) or _is_text_related(node)
+        )
+
+    def _resolve_sql_sink(
+        self,
+        sql_expr: ast.AST | None,
+        *,
+        has_params: bool,
+    ) -> tuple[str, list[str]]:
+        if sql_expr is None:
+            return ("parameterized" if has_params else "unknown", [])
+
+        if isinstance(sql_expr, ast.Name):
+            binding = self.lookup(sql_expr.id)
+            if binding and binding[0] == "sql_fragment":
+                meta = binding[1]
+                return (
+                    meta.get("construction") or "concat",
+                    list(meta.get("input_ids") or []),
+                )
+            if binding and binding[0] == "string":
+                return ("parameterized" if has_params else "literal", [])
+
+        if isinstance(sql_expr, ast.Call) and isinstance(sql_expr.func, ast.Name):
+            binding = self.lookup(sql_expr.func.id)
+            if binding and binding[0] == "local_fn":
+                summary = binding[1]
+                kind = summary.get("construction")
+                if kind in {"concat", "fstring", "format"}:
+                    return (kind, self._taint_ids_from_expr(sql_expr))
+
+        # "".join(parts) / sep.join(...) building SQL text
+        if (
+            isinstance(sql_expr, ast.Call)
+            and isinstance(sql_expr.func, ast.Attribute)
+            and sql_expr.func.attr == "join"
+        ):
+            return ("concat", self._input_ids_from(sql_expr))
+
+        construction, _core = _sql_construction_of(sql_expr)
+        if construction in {"concat", "fstring", "format"}:
+            return (construction, self._input_ids_from(sql_expr))
+        # Dynamic SQL text wins over "has params" — executemany(built_sql, rows).
+        if has_params:
+            return ("parameterized", self._input_ids_from(sql_expr))
+        if construction == "literal":
+            return ("literal", [])
+        return ("unknown", self._input_ids_from(sql_expr))
 
     def _match_orm_extra_call(self, node: ast.Call) -> dict | None:
         receiver = node.func.value if isinstance(node.func, ast.Attribute) else None
@@ -785,6 +958,21 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             }
 
         if api in UNSAFE_MARK_APIS:
+            payload = node.args[0] if node.args else None
+            if _is_escape_call(payload) or _is_sanitizer_call(payload):
+                return {
+                    "sink": UNSAFE_MARK_APIS[api],
+                    "escaping_observed": "yes",
+                    "uses_input_source_ids": [],
+                }
+            if not input_ids and payload is not None and (
+                _escaping_observed(payload) == "yes"
+            ):
+                return {
+                    "sink": UNSAFE_MARK_APIS[api],
+                    "escaping_observed": "yes",
+                    "uses_input_source_ids": [],
+                }
             return {
                 "sink": UNSAFE_MARK_APIS[api],
                 "escaping_observed": "no",
@@ -1253,7 +1441,10 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             for input_id in input_ids:
                 self.validated_url_input_ids.add(input_id)
 
-    def _url_validation_targets_from_test(self, test: ast.AST) -> list[tuple[str | None, list[str]]]:
+    def _url_validation_targets_from_test(
+        self,
+        test: ast.AST,
+    ) -> list[tuple[str | None, list[str]]]:
         results: list[tuple[str | None, list[str]]] = []
         nodes = [test]
         if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
@@ -1265,7 +1456,9 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
                     target = self._parsed_url_validation_target(left, op, comparator)
                     if target is not None:
                         results.append(target)
-                    host_target = self._hostname_binding_validation_target(left, op, comparator)
+                    host_target = self._hostname_binding_validation_target(
+                        left, op, comparator
+                    )
                     if host_target is not None:
                         results.append(host_target)
                     left = comparator
@@ -1324,11 +1517,7 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         prefix = _const_str(call.args[0]) if call.args else None
         if prefix not in {"https://", "https:"}:
             return None
-        # Strong scheme restriction: reject when NOT https (negated startswith)
-        # or when comparing equality paths handled elsewhere.
-        if not negated and not isinstance(getattr(test, "op", None), ast.Not):
-            # `if url.startswith("https://"): allow` is not by itself a gate on the aborting branch
-            # Aborting body + `if not url.startswith("https://")` is the strong form.
+        if not negated:
             return None
         target = call.func.value
         url_var = target.id if isinstance(target, ast.Name) else None
@@ -1357,7 +1546,10 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
             if binding and binding[0] == "url_hostname":
                 meta = binding[1]
                 return (meta.get("url_var"), list(meta.get("input_ids") or []))
-        if isinstance(host_expr, ast.Attribute) and host_expr.attr in {"hostname", "netloc"}:
+        if isinstance(host_expr, ast.Attribute) and host_expr.attr in {
+            "hostname",
+            "netloc",
+        }:
             meta = self._url_host_meta(host_expr)
             if meta is not None:
                 return (meta.get("url_var"), list(meta.get("input_ids") or []))
@@ -1369,18 +1561,26 @@ class PythonEvidenceVisitor(ast.NodeVisitor):
         op: ast.cmpop,
         right: ast.AST,
     ) -> tuple[str | None, list[str]] | None:
-        # urlparse(x).hostname not in allowlist (inline)
-        if isinstance(left, ast.Attribute) and left.attr in {"hostname", "netloc"}:
-            meta = self._url_host_meta(left)
-            if meta is not None and isinstance(op, (ast.NotIn, ast.In)):
-                return (meta.get("url_var"), list(meta.get("input_ids") or []))
-            if (
-                meta is not None
-                and left.attr == "scheme"
-                and isinstance(op, ast.NotEq)
-                and _const_str(right) == "https"
+        if isinstance(left, ast.Attribute):
+            if left.attr in {"hostname", "netloc"} and isinstance(
+                op, (ast.NotIn, ast.In)
             ):
-                return (meta.get("url_var"), list(meta.get("input_ids") or []))
+                meta = self._url_host_meta(left)
+                if meta is not None:
+                    return (meta.get("url_var"), list(meta.get("input_ids") or []))
+            if left.attr == "scheme" and isinstance(op, ast.NotEq) and _const_str(
+                right
+            ) == "https":
+                meta = self._url_host_meta(left)
+                if meta is not None:
+                    return (meta.get("url_var"), list(meta.get("input_ids") or []))
+                # Inline urlparse(u).scheme — reuse parse meta helper on Attribute.value
+                if _is_urlparse_call(left.value):
+                    url_arg = left.value.args[0] if left.value.args else None
+                    return (
+                        _urlparse_url_var(url_arg),
+                        self._input_ids_from(url_arg),
+                    )
         if not isinstance(left, ast.Attribute) or not isinstance(left.value, ast.Name):
             return None
         binding = self.lookup(left.value.id)
@@ -1977,6 +2177,8 @@ def _binding_source_ids(binding: tuple | None) -> list[str]:
         return list(payload)
     if kind == "upload_filename":
         return ["upload:filename"]
+    if kind == "sql_fragment":
+        return list(payload.get("input_ids") or [])
     return []
 
 
@@ -2022,6 +2224,100 @@ def _is_open_call(node: ast.AST) -> bool:
     return _callee_name(node.func) == "open"
 
 
+def _is_text_call(node: ast.AST | None) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    name = _callee_name(node.func)
+    if name == "text":
+        return True
+    chain = _attr_chain(node.func)
+    return bool(chain and chain[-1] == "text")
+
+
+def _is_text_related(node: ast.AST | None) -> bool:
+    if node is None:
+        return False
+    if _is_text_call(node):
+        return True
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+        if node.func.attr in {"format", "format_map"} and _is_text_call(node.func.value):
+            return True
+    for child in ast.walk(node):
+        if _is_text_call(child):
+            return True
+    return False
+
+
+def _sql_construction_of(node: ast.AST | None) -> tuple[str, ast.AST | None]:
+    """Return (construction_kind, core_expr) after unwrapping SQLAlchemy text()."""
+    if node is None:
+        return ("unknown", None)
+    current: ast.AST = node
+    # text(expr).format(...) / text(expr).format_map(...)
+    if (
+        isinstance(current, ast.Call)
+        and isinstance(current.func, ast.Attribute)
+        and current.func.attr in {"format", "format_map"}
+        and _is_text_call(current.func.value)
+    ):
+        return ("format", current)
+    # Unwrap text(...) layers
+    while _is_text_call(current) and isinstance(current, ast.Call) and current.args:
+        current = current.args[0]
+    kind = _string_construction(current)
+    return (kind, current)
+
+
+def _summarize_local_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> dict | None:
+    """Lightweight same-file nested helper summary (not full interprocedural)."""
+    params = [arg.arg for arg in node.args.args]
+    if not params:
+        return None
+    constructions: set[str] = set()
+    uses_params = False
+    for stmt in node.body:
+        if not isinstance(stmt, ast.Return) or stmt.value is None:
+            # Also note assigned fragments that look like SQL returns via name — keep simple.
+            continue
+        kind, _core = _sql_construction_of(stmt.value)
+        if kind in {"concat", "fstring", "format"}:
+            constructions.add(kind)
+        for child in ast.walk(stmt.value):
+            if isinstance(child, ast.Name) and child.id in params:
+                uses_params = True
+            if isinstance(child, ast.BinOp) and isinstance(child.op, (ast.Add, ast.Mod)):
+                constructions.add("concat" if isinstance(child.op, ast.Add) else "format")
+            if isinstance(child, ast.JoinedStr):
+                constructions.add("fstring")
+            if (
+                isinstance(child, ast.Call)
+                and isinstance(child.func, ast.Attribute)
+                and child.func.attr in {"format", "format_map"}
+            ):
+                constructions.add("format")
+    # Scan assignments for returned-style construction using params
+    for stmt in ast.walk(node):
+        if isinstance(stmt, ast.Assign) and stmt.targets:
+            kind, _ = _sql_construction_of(stmt.value)
+            if kind in {"concat", "fstring", "format"}:
+                constructions.add(kind)
+                for child in ast.walk(stmt.value):
+                    if isinstance(child, ast.Name) and child.id in params:
+                        uses_params = True
+    if not constructions or not uses_params:
+        return None
+    preferred = "format" if "format" in constructions else next(iter(constructions))
+    if "concat" in constructions:
+        preferred = "concat"
+    if "fstring" in constructions and preferred != "concat":
+        preferred = "fstring"
+    return {
+        "construction": preferred,
+        "propagates_args": True,
+        "params": params,
+    }
+
+
 def _is_sanitizer_call(node: ast.AST | None) -> bool:
     if not isinstance(node, ast.Call):
         return False
@@ -2042,6 +2338,9 @@ def _test_has_role_marker(test: ast.AST) -> bool:
 
 
 def _sql_expression_construction(sql_expr: ast.AST | None, *, has_params: bool) -> str:
+    kind, _ = _sql_construction_of(sql_expr)
+    if kind in {"concat", "fstring", "format"}:
+        return kind
     if isinstance(sql_expr, ast.Call) and isinstance(sql_expr.func, ast.Attribute):
         if sql_expr.func.attr == "join":
             return "concat"
@@ -2144,14 +2443,17 @@ def _string_construction(node: ast.AST | None) -> str:
     if (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "format"
+        and node.func.attr in {"format", "format_map"}
     ):
         return "format"
     return "unknown"
 
 
 def _query_construction(sql_expr: ast.AST | None, *, has_params: bool) -> str:
-    kind = _string_construction(sql_expr)
+    kind, _ = _sql_construction_of(sql_expr) if sql_expr is not None else ("unknown", None)
+    # Avoid recursion: use raw string construction on already-unwrapped values
+    if kind == "unknown":
+        kind = _string_construction(sql_expr)
     if kind in {"concat", "fstring", "format"}:
         return kind
     if has_params:
