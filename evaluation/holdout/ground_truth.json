@@ -1,0 +1,457 @@
+{
+  "version": "1.0",
+  "description": "Adversarial holdout corpus (independent from frozen benchmark)",
+  "scanner": "analyze_source",
+  "cases": [
+    {
+      "id": "hold_sqli_v_sqlite_fstring",
+      "path": "corpus/sql_injection/hold_sqli_v_sqlite_fstring.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "sqlite3 execute with f-string embedding request form value."
+    },
+    {
+      "id": "hold_sqli_v_text_format",
+      "path": "corpus/sql_injection/hold_sqli_v_text_format.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "SQLAlchemy-style text() built with str.format and user input."
+    },
+    {
+      "id": "hold_sqli_v_join_fragments",
+      "path": "corpus/sql_injection/hold_sqli_v_join_fragments.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "User-controlled fragments joined into dynamic SQL before execute."
+    },
+    {
+      "id": "hold_sqli_v_order_by_param",
+      "path": "corpus/sql_injection/hold_sqli_v_order_by_param.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "ORDER BY clause taken directly from query string."
+    },
+    {
+      "id": "hold_sqli_v_second_order",
+      "path": "corpus/sql_injection/hold_sqli_v_second_order.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Stored user nickname later concatenated into SQL without parameterization."
+    },
+    {
+      "id": "hold_sqli_s_bound_params",
+      "path": "corpus/sql_injection/hold_sqli_s_bound_params.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Named bind parameters isolate user input from SQL text."
+    },
+    {
+      "id": "hold_sqli_s_orm_filter",
+      "path": "corpus/sql_injection/hold_sqli_s_orm_filter.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "ORM filter_by passes value as bound data, not SQL text."
+    },
+    {
+      "id": "hold_sqli_s_static_in_clause",
+      "path": "corpus/sql_injection/hold_sqli_s_static_in_clause.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "IN clause uses only compile-time integer literals."
+    },
+    {
+      "id": "hold_sqli_s_user_in_log",
+      "path": "corpus/sql_injection/hold_sqli_s_user_in_log.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "User input logged but query uses static SQL."
+    },
+    {
+      "id": "hold_sqli_s_parameterized_tuple",
+      "path": "corpus/sql_injection/hold_sqli_s_parameterized_tuple.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Tuple passed as execute parameters with placeholder SQL."
+    },
+    {
+      "id": "hold_xss_v_style_attr",
+      "path": "corpus/xss/hold_xss_v_style_attr.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User color injected into inline style attribute via f-string."
+    },
+    {
+      "id": "hold_xss_v_onclick_attr",
+      "path": "corpus/xss/hold_xss_v_onclick_attr.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User action concatenated into onclick HTML attribute."
+    },
+    {
+      "id": "hold_xss_v_mark_safe_chain",
+      "path": "corpus/xss/hold_xss_v_mark_safe_chain.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "mark_safe applied to attacker-controlled banner text."
+    },
+    {
+      "id": "hold_xss_v_multihop_reflect",
+      "path": "corpus/xss/hold_xss_v_multihop_reflect.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User input copied through locals then reflected in HTML response."
+    },
+    {
+      "id": "hold_xss_v_percent_format_html",
+      "path": "corpus/xss/hold_xss_v_percent_format_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "Percent-format builds HTML with unescaped user title."
+    },
+    {
+      "id": "hold_xss_s_format_html",
+      "path": "corpus/xss/hold_xss_s_format_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Django format_html escapes interpolated values."
+    },
+    {
+      "id": "hold_xss_s_escape_multistage",
+      "path": "corpus/xss/hold_xss_s_escape_multistage.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "html.escape applied before embedding in static HTML wrapper."
+    },
+    {
+      "id": "hold_xss_s_jsonify",
+      "path": "corpus/xss/hold_xss_s_jsonify.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "JSON API response does not reflect raw HTML to browser."
+    },
+    {
+      "id": "hold_xss_s_redirect",
+      "path": "corpus/xss/hold_xss_s_redirect.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Redirect header is not HTML document reflection."
+    },
+    {
+      "id": "hold_xss_s_template_static",
+      "path": "corpus/xss/hold_xss_s_template_static.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Template render with only static context keys."
+    },
+    {
+      "id": "hold_ssrf_v_httpx_client",
+      "path": "corpus/ssrf/hold_ssrf_v_httpx_client.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "httpx client performs GET to user-supplied absolute URL."
+    },
+    {
+      "id": "hold_ssrf_v_indirect_variable",
+      "path": "corpus/ssrf/hold_ssrf_v_indirect_variable.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "URL copied through intermediate variable before requests call."
+    },
+    {
+      "id": "hold_ssrf_v_header_referer",
+      "path": "corpus/ssrf/hold_ssrf_v_header_referer.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "Server fetches URL read from Referer header."
+    },
+    {
+      "id": "hold_ssrf_v_weak_scheme_only",
+      "path": "corpus/ssrf/hold_ssrf_v_weak_scheme_only.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "Only blocks http scheme; https user URLs still reach internal metadata."
+    },
+    {
+      "id": "hold_ssrf_v_urlopen_alias",
+      "path": "corpus/ssrf/hold_ssrf_v_urlopen_alias.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "urllib.request.urlopen called with user-controlled location."
+    },
+    {
+      "id": "hold_ssrf_s_fixed_service",
+      "path": "corpus/ssrf/hold_ssrf_s_fixed_service.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Outbound request uses compile-time constant service URL."
+    },
+    {
+      "id": "hold_ssrf_s_allowlist_netloc",
+      "path": "corpus/ssrf/hold_ssrf_s_allowlist_netloc.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Hostname allowlist enforced before requests.get."
+    },
+    {
+      "id": "hold_ssrf_s_https_required",
+      "path": "corpus/ssrf/hold_ssrf_s_https_required.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "HTTPS-only scheme guard with abort before network call."
+    },
+    {
+      "id": "hold_ssrf_s_user_url_in_html",
+      "path": "corpus/ssrf/hold_ssrf_s_user_url_in_html.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "User URL embedded in HTML anchor only; server does not fetch it."
+    },
+    {
+      "id": "hold_ssrf_s_session_validated",
+      "path": "corpus/ssrf/hold_ssrf_s_session_validated.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "HTTP session client with allowlisted host validation before GET."
+    },
+    {
+      "id": "hold_upload_v_double_extension",
+      "path": "corpus/file_upload/hold_upload_v_double_extension.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "User filename saved under webroot without type validation."
+    },
+    {
+      "id": "hold_upload_v_path_join",
+      "path": "corpus/file_upload/hold_upload_v_path_join.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "os.path.join with user filename under uploads directory."
+    },
+    {
+      "id": "hold_upload_v_size_only",
+      "path": "corpus/file_upload/hold_upload_v_size_only.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Only max size checked; executable extension still saved to static."
+    },
+    {
+      "id": "hold_upload_v_content_type_trust",
+      "path": "corpus/file_upload/hold_upload_v_content_type_trust.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Trusts client Content-Type header instead of extension policy."
+    },
+    {
+      "id": "hold_upload_v_tmp_user_ext",
+      "path": "corpus/file_upload/hold_upload_v_tmp_user_ext.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Writes upload to /tmp using attacker-controlled filename suffix."
+    },
+    {
+      "id": "hold_upload_s_png_guard",
+      "path": "corpus/file_upload/hold_upload_s_png_guard.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "PNG extension required before save to non-webroot path."
+    },
+    {
+      "id": "hold_upload_s_reject_php",
+      "path": "corpus/file_upload/hold_upload_s_reject_php.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "PHP extension rejected; fixed safe destination path."
+    },
+    {
+      "id": "hold_upload_s_no_disk_write",
+      "path": "corpus/file_upload/hold_upload_s_no_disk_write.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "File accepted to memory buffer only; no save() call."
+    },
+    {
+      "id": "hold_upload_s_secure_name",
+      "path": "corpus/file_upload/hold_upload_s_secure_name.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "werkzeug secure_filename strips path segments; constant basename."
+    },
+    {
+      "id": "hold_upload_s_lookalike_log",
+      "path": "corpus/file_upload/hold_upload_s_lookalike_log.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Logs filename metadata without persisting uploaded bytes."
+    },
+    {
+      "id": "hold_idor_v_post_user_id",
+      "path": "corpus/idor/hold_idor_v_post_user_id.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "POST body user_id used to load profile without ownership check."
+    },
+    {
+      "id": "hold_idor_v_email_lookup",
+      "path": "corpus/idor/hold_idor_v_email_lookup.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Email from query used to fetch user record without authz."
+    },
+    {
+      "id": "hold_idor_v_delete_by_id",
+      "path": "corpus/idor/hold_idor_v_delete_by_id.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Destructive ORM delete keyed only by request parameter."
+    },
+    {
+      "id": "hold_idor_v_json_body_id",
+      "path": "corpus/idor/hold_idor_v_json_body_id.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "JSON document id from request body drives ORM get."
+    },
+    {
+      "id": "hold_idor_v_filter_no_owner",
+      "path": "corpus/idor/hold_idor_v_filter_no_owner.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Filter uses user-supplied account id without session ownership check."
+    },
+    {
+      "id": "hold_idor_s_owner_compare",
+      "path": "corpus/idor/hold_idor_s_owner_compare.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Record returned only when owner_id matches current_user."
+    },
+    {
+      "id": "hold_idor_s_filter_current_user",
+      "path": "corpus/idor/hold_idor_s_filter_current_user.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Query scoped to authenticated user id from session context."
+    },
+    {
+      "id": "hold_idor_s_guard_before_update",
+      "path": "corpus/idor/hold_idor_s_guard_before_update.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Ownership compare before persisting update."
+    },
+    {
+      "id": "hold_idor_s_static_lookup",
+      "path": "corpus/idor/hold_idor_s_static_lookup.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Lookup uses constant identifier, not user input."
+    },
+    {
+      "id": "hold_idor_s_lookalike_public",
+      "path": "corpus/idor/hold_idor_s_lookalike_public.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Public catalog listing without per-user object access."
+    }
+  ]
+}

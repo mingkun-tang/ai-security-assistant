@@ -40,6 +40,14 @@ Outputs:
 - `evaluation/results/benchmark-results.json`
 - `evaluation/results/benchmark-results.md`
 
+## Holdout (adversarial / blind)
+
+Separate corpus under `evaluation/holdout/` — not derived from the frozen 60 cases. See `evaluation/holdout/README.md`.
+
+```sh
+uv run ai-security-assistant benchmark --benchmark-root evaluation/holdout --output-dir evaluation/results/holdout
+```
+
 ## Remediation evaluation (future)
 
 `app/evaluation/remediation.py` defines interfaces for detect → fix → apply → rescan. Sprint 1 does not run paid AI remediation at scale.
