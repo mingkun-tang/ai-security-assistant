@@ -142,6 +142,26 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip the optional AI executive summary section",
     )
+    benchmark_parser = subparsers.add_parser(
+        "benchmark",
+        help="Run the security evaluation benchmark against ground-truth corpus",
+    )
+    benchmark_parser.add_argument(
+        "--benchmark-root",
+        metavar="DIR",
+        help="Path to evaluation/benchmark directory (default: packaged corpus)",
+    )
+    benchmark_parser.add_argument(
+        "--output-dir",
+        metavar="DIR",
+        help="Directory for benchmark-results.json and benchmark-results.md",
+    )
+    benchmark_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable JSON results to stdout",
+    )
+
     return parser
 
 
@@ -263,6 +283,34 @@ def run_suggest_fix(
     return 0
 
 
+def run_benchmark(
+    benchmark_root: str | None,
+    output_dir: str | None,
+    as_json: bool,
+) -> int:
+    from pathlib import Path
+
+    from app.evaluation.benchmark import default_benchmark_root, run_benchmark as execute
+    from app.evaluation.report import render_benchmark_markdown, write_benchmark_reports
+
+    root = Path(benchmark_root) if benchmark_root else default_benchmark_root()
+    report = execute(root)
+    payload_dir = Path(output_dir) if output_dir else root.parent / "results"
+    paths = write_benchmark_reports(report, payload_dir)
+
+    if as_json:
+        from app.evaluation.benchmark import report_to_dict
+
+        print(json.dumps(report_to_dict(report), indent=2))
+    else:
+        print(render_benchmark_markdown(report))
+        print()
+        print(f"Wrote JSON: {paths['json']}", file=sys.stderr)
+        print(f"Wrote Markdown: {paths['markdown']}", file=sys.stderr)
+
+    return 0
+
+
 def _resolve_report_format(*, html: bool, markdown: bool, output: str | None) -> str:
     if html:
         return "html"
@@ -342,6 +390,13 @@ def main(argv: list[str] | None = None) -> int:
             markdown=bool(args.markdown),
             output=args.output,
             no_ai_summary=bool(args.no_ai_summary),
+        )
+
+    if args.command == "benchmark":
+        return run_benchmark(
+            benchmark_root=args.benchmark_root,
+            output_dir=args.output_dir,
+            as_json=bool(args.json),
         )
 
     parser.print_help()

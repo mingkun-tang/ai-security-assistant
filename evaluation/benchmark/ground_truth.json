@@ -1,0 +1,547 @@
+{
+  "version": "1.0",
+  "description": "Deterministic source-analysis benchmark corpus",
+  "scanner": "analyze_source",
+  "cases": [
+    {
+      "id": "sql_injection-vuln_concat_execute",
+      "path": "corpus/sql_injection/vuln_concat_execute.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "User input concatenated into SQL execute()."
+    },
+    {
+      "id": "sql_injection-vuln_fstring_execute",
+      "path": "corpus/sql_injection/vuln_fstring_execute.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "F-string builds SQL with user input."
+    },
+    {
+      "id": "sql_injection-vuln_format_execute",
+      "path": "corpus/sql_injection/vuln_format_execute.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "str.format injects user input into SQL."
+    },
+    {
+      "id": "sql_injection-vuln_percent_format",
+      "path": "corpus/sql_injection/vuln_percent_format.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Percent formatting with user input in SQL."
+    },
+    {
+      "id": "sql_injection-vuln_join_query",
+      "path": "corpus/sql_injection/vuln_join_query.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "User-controlled table name in SQL."
+    },
+    {
+      "id": "sql_injection-vuln_concat_in_where",
+      "path": "corpus/sql_injection/vuln_concat_in_where.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": true,
+      "expected_issue_type": "sql_injection",
+      "explanation": "Concatenated form input in UPDATE WHERE clause."
+    },
+    {
+      "id": "sql_injection-safe_parameterized",
+      "path": "corpus/sql_injection/safe_parameterized.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Parameterized query binds user input safely."
+    },
+    {
+      "id": "sql_injection-safe_static_query",
+      "path": "corpus/sql_injection/safe_static_query.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Static SQL with no user input."
+    },
+    {
+      "id": "sql_injection-safe_parameterized_tuple",
+      "path": "corpus/sql_injection/safe_parameterized_tuple.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Tuple parameters for execute()."
+    },
+    {
+      "id": "sql_injection-safe_no_user_input",
+      "path": "corpus/sql_injection/safe_no_user_input.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Count query without user input."
+    },
+    {
+      "id": "sql_injection-safe_literal_filter",
+      "path": "corpus/sql_injection/safe_literal_filter.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Literal filter only."
+    },
+    {
+      "id": "sql_injection-safe_named_params",
+      "path": "corpus/sql_injection/safe_named_params.py",
+      "language": "python",
+      "category": "sql_injection",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Named parameter binding."
+    },
+    {
+      "id": "xss-vuln_render_template_input",
+      "path": "corpus/xss/vuln_render_template_input.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User input passed to template without escaping."
+    },
+    {
+      "id": "xss-vuln_template_string",
+      "path": "corpus/xss/vuln_template_string.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User input reflected in HTML response."
+    },
+    {
+      "id": "xss-vuln_markup_concat",
+      "path": "corpus/xss/vuln_markup_concat.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "HTML built via string concatenation."
+    },
+    {
+      "id": "xss-vuln_jinja_style_render",
+      "path": "corpus/xss/vuln_jinja_style_render.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User input in render_template_string."
+    },
+    {
+      "id": "xss-vuln_unescaped_variable",
+      "path": "corpus/xss/vuln_unescaped_variable.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User label concatenated into HTML."
+    },
+    {
+      "id": "xss-vuln_url_in_html",
+      "path": "corpus/xss/vuln_url_in_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": true,
+      "expected_issue_type": "xss",
+      "explanation": "User URL in href without validation."
+    },
+    {
+      "id": "xss-safe_static_template",
+      "path": "corpus/xss/safe_static_template.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Template without user-controlled output."
+    },
+    {
+      "id": "xss-safe_markupsafe_escape",
+      "path": "corpus/xss/safe_markupsafe_escape.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "markupsafe.escape before template."
+    },
+    {
+      "id": "xss-safe_no_reflection",
+      "path": "corpus/xss/safe_no_reflection.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Input not reflected in HTML."
+    },
+    {
+      "id": "xss-safe_json_response",
+      "path": "corpus/xss/safe_json_response.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "JSON response not HTML sink."
+    },
+    {
+      "id": "xss-safe_hardcoded_html",
+      "path": "corpus/xss/safe_hardcoded_html.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Static HTML only."
+    },
+    {
+      "id": "xss-safe_escaped_concat",
+      "path": "corpus/xss/safe_escaped_concat.py",
+      "language": "python",
+      "category": "xss",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Escaped before HTML concat."
+    },
+    {
+      "id": "ssrf-vuln_requests_get_input",
+      "path": "corpus/ssrf/vuln_requests_get_input.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "requests.get with user URL."
+    },
+    {
+      "id": "ssrf-vuln_concat_url",
+      "path": "corpus/ssrf/vuln_concat_url.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "Host concatenated into outbound URL."
+    },
+    {
+      "id": "ssrf-vuln_post_url",
+      "path": "corpus/ssrf/vuln_post_url.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "User callback URL in requests.post."
+    },
+    {
+      "id": "ssrf-vuln_fstring_url",
+      "path": "corpus/ssrf/vuln_fstring_url.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "F-string builds request URL from input."
+    },
+    {
+      "id": "ssrf-vuln_urllib_input",
+      "path": "corpus/ssrf/vuln_urllib_input.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "urllib opens user-controlled URL."
+    },
+    {
+      "id": "ssrf-vuln_session_url",
+      "path": "corpus/ssrf/vuln_session_url.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": true,
+      "expected_issue_type": "ssrf",
+      "explanation": "Session GET to user redirect URL."
+    },
+    {
+      "id": "ssrf-safe_literal_url",
+      "path": "corpus/ssrf/safe_literal_url.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Fixed HTTPS endpoint only."
+    },
+    {
+      "id": "ssrf-safe_allowlist_host",
+      "path": "corpus/ssrf/safe_allowlist_host.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Allowlisted host before request."
+    },
+    {
+      "id": "ssrf-safe_fixed_endpoint",
+      "path": "corpus/ssrf/safe_fixed_endpoint.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Internal metrics URL is fixed."
+    },
+    {
+      "id": "ssrf-safe_no_network",
+      "path": "corpus/ssrf/safe_no_network.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "No outbound request made."
+    },
+    {
+      "id": "ssrf-safe_https_only_literal",
+      "path": "corpus/ssrf/safe_https_only_literal.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Literal HTTPS ping."
+    },
+    {
+      "id": "ssrf-safe_validated_scheme",
+      "path": "corpus/ssrf/safe_validated_scheme.py",
+      "language": "python",
+      "category": "ssrf",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Scheme validated before fetch."
+    },
+    {
+      "id": "file_upload-vuln_user_filename_webroot",
+      "path": "corpus/file_upload/vuln_user_filename_webroot.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "User filename saved under web root."
+    },
+    {
+      "id": "file_upload-vuln_executable_name",
+      "path": "corpus/file_upload/vuln_executable_name.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "User filename under web uploads."
+    },
+    {
+      "id": "file_upload-vuln_no_validation",
+      "path": "corpus/file_upload/vuln_no_validation.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Raw filename save without checks."
+    },
+    {
+      "id": "file_upload-vuln_public_path",
+      "path": "corpus/file_upload/vuln_public_path.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Upload saved to public path with user name."
+    },
+    {
+      "id": "file_upload-vuln_concat_path",
+      "path": "corpus/file_upload/vuln_concat_path.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Concatenated path with user filename."
+    },
+    {
+      "id": "file_upload-vuln_script_extension",
+      "path": "corpus/file_upload/vuln_script_extension.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": true,
+      "expected_issue_type": "file_upload",
+      "explanation": "Unvalidated upload filename."
+    },
+    {
+      "id": "file_upload-safe_fixed_filename",
+      "path": "corpus/file_upload/safe_fixed_filename.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Fixed destination filename."
+    },
+    {
+      "id": "file_upload-safe_extension_check",
+      "path": "corpus/file_upload/safe_extension_check.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Extension checked before save."
+    },
+    {
+      "id": "file_upload-safe_no_save",
+      "path": "corpus/file_upload/safe_no_save.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "File read but not persisted."
+    },
+    {
+      "id": "file_upload-safe_outside_webroot",
+      "path": "corpus/file_upload/safe_outside_webroot.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Saved outside web root with fixed name."
+    },
+    {
+      "id": "file_upload-safe_random_name",
+      "path": "corpus/file_upload/safe_random_name.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Random server-side filename."
+    },
+    {
+      "id": "file_upload-safe_reject_executable",
+      "path": "corpus/file_upload/safe_reject_executable.py",
+      "language": "python",
+      "category": "file_upload",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Executable extension rejected."
+    },
+    {
+      "id": "idor-vuln_get_by_id",
+      "path": "corpus/idor/vuln_get_by_id.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Object fetched by user-supplied id without ownership check."
+    },
+    {
+      "id": "idor-vuln_update_other_user",
+      "path": "corpus/idor/vuln_update_other_user.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Update by user_id without ownership validation."
+    },
+    {
+      "id": "idor-vuln_delete_by_param",
+      "path": "corpus/idor/vuln_delete_by_param.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Delete by account_id from request."
+    },
+    {
+      "id": "idor-vuln_fetch_record",
+      "path": "corpus/idor/vuln_fetch_record.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Order fetched by user order_id only."
+    },
+    {
+      "id": "idor-vuln_path_id",
+      "path": "corpus/idor/vuln_path_id.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Document opened by path id without auth."
+    },
+    {
+      "id": "idor-vuln_profile_lookup",
+      "path": "corpus/idor/vuln_profile_lookup.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": true,
+      "expected_issue_type": "idor",
+      "explanation": "Profile lookup by user profile_id."
+    },
+    {
+      "id": "idor-safe_ownership_check",
+      "path": "corpus/idor/safe_ownership_check.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Ownership verified before returning user."
+    },
+    {
+      "id": "idor-safe_current_user_only",
+      "path": "corpus/idor/safe_current_user_only.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Uses current_user id only."
+    },
+    {
+      "id": "idor-safe_guard_before_update",
+      "path": "corpus/idor/safe_guard_before_update.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Ownership guard before update."
+    },
+    {
+      "id": "idor-safe_filter_owner",
+      "path": "corpus/idor/safe_filter_owner.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Query filtered to current user."
+    },
+    {
+      "id": "idor-safe_no_user_lookup",
+      "path": "corpus/idor/safe_no_user_lookup.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "Static public data only."
+    },
+    {
+      "id": "idor-safe_static_resource",
+      "path": "corpus/idor/safe_static_resource.py",
+      "language": "python",
+      "category": "idor",
+      "expected_vulnerable": false,
+      "expected_issue_type": null,
+      "explanation": "No user-specific data access."
+    }
+  ]
+}
