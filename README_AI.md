@@ -3,7 +3,7 @@
 ## Purpose
 
 The AI layer explains the deterministic security analysis in beginner-friendly
-language. It does not classify vulnerabilities or change the deterministic
+language. It does **not** classify vulnerabilities or change the deterministic
 engine's findings, confidence, evidence, or vulnerability status.
 
 The deterministic engine remains the source of truth. If the AI provider is
@@ -12,9 +12,13 @@ normally.
 
 ## AI is optional
 
-- **No API key required** for scanning, reporting, or the VS Code extension's deterministic findings.
-- Leave `OPENAI_API_KEY` unset to disable AI entirely. The app uses `NullProvider`, makes no network calls, and leaves deterministic output unchanged.
-- **You provide your own OpenAI API key** when you want explanations or fix suggestions. Usage is billed to your OpenAI account.
+- **No API key required** for scanning, reporting, or the VS Code extension's
+  deterministic findings (Problems, sidebar, detail view without AI sections).
+- Leave `OPENAI_API_KEY` unset to disable AI entirely. The app uses
+  `NullProvider`, makes no network calls for AI, and leaves deterministic
+  output unchanged.
+- **You provide your own OpenAI API key** when you want explanations or fix
+  suggestions. Usage is billed to your OpenAI account.
 
 ## OpenAI setup
 
@@ -30,7 +34,7 @@ OPENAI_MODEL=gpt-4o-mini
 `OPENAI_MODEL` is optional. If it is not set, the application uses
 `gpt-4o-mini` as the default for short explanations and fix suggestions.
 
-In VS Code, you can also set **AI Security Assistant: Openai Model**
+In VS Code / Cursor, you can also set **AI Security Assistant: Openai Model**
 (`aiSecurityAssistant.openaiModel`, default `gpt-4o-mini`). The extension
 forwards it to the CLI as `OPENAI_MODEL` when that variable is not already set
 in your environment.
@@ -49,12 +53,22 @@ Do not commit `.env` files or API keys. `.env` is ignored by Git and
 
 ## What data is sent to the AI provider
 
-AI requests are intentionally small:
+When AI is enabled, finding metadata and relevant **source snippets** may be
+**transmitted to the configured AI provider**. Review your organization’s
+data-handling and compliance requirements before enabling AI on sensitive
+codebases.
 
-- **Explanations:** immutable deterministic finding fields (issue type, confidence, evidence snippets, remediation text) for the analyzed scenario or file — not the whole repo.
-- **Fix suggestions:** one finding's metadata plus the matched **source snippet** and evidence locations — not the full file when a snippet is available, and never the entire project tree.
+Requests are intentionally small:
 
-The engine classifies findings locally; the AI only explains or proposes a replacement for review.
+- **Explanations:** immutable deterministic finding fields (issue type,
+  confidence, evidence snippets, remediation text) for the analyzed scenario
+  or file — not the whole repo.
+- **Fix suggestions:** one finding's metadata plus the matched **source
+  snippet** and evidence locations — not the full file when a snippet is
+  available, and never the entire project tree.
+
+The engine classifies findings locally; the AI only explains or proposes a
+replacement for review.
 
 ## Disabling AI
 
