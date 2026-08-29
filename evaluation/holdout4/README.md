@@ -2,7 +2,7 @@
 
 Independent **100-case** corpus for the final unbiased scanner evaluation before the V1 release gate.
 
-**Frozen scanner checkpoint:** `763cb97` (`feat(scanner): strengthen generalized security analysis`)
+**Frozen scanner checkpoint:** `c279269` (`feat(scanner): strengthen generalized security analysis`)
 
 **Rules:**
 - Ground truth locked before first scanner run.
@@ -23,5 +23,5 @@ Independent **100-case** corpus for the final unbiased scanner evaluation before
 
 ## Official first-pass lock
 
-- **Checkpoint:** `763cb97`
-- **Ground-truth SHA-256:** `ecbfb4387b5f998eddcbdbfe0a43dec4cf53e4343e5f62055cc96e5e06cc8e10`
+- **Checkpoint:** `c279269`
+- **Ground-truth SHA-256:** `b8c012fc3cb1eb43227a96e427a1ba4167f516aa82be00671931760bb3148adc`

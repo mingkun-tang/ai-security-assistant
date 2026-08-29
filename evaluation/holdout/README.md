@@ -29,7 +29,7 @@ Holdout results measure generalization; frozen benchmark results measure regress
 
 ## First-run baseline (before holdout tuning)
 
-Captured against scanner at commit `caffe2c` (Scanner Quality Sprint). **Do not tune the scanner against this set** — it is now a development/diagnostic corpus after failure inspection.
+Captured against scanner at commit `fc067a1` (Scanner Quality Sprint). **Do not tune the scanner against this set** — it is now a development/diagnostic corpus after failure inspection.
 
 | Metric | Value |
 | --- | ---: |

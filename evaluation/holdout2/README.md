@@ -1,6 +1,6 @@
 # Unseen Holdout #2 (generalization measurement)
 
-Independent 100-case corpus for **unbiased** evaluation after the Generalization Sprint checkpoint (`fff7b3b`).
+Independent 100-case corpus for **unbiased** evaluation after the Generalization Sprint checkpoint (`15c34f8`).
 
 **Rules:**
 - Ground truth is locked before first scanner run.
@@ -18,8 +18,8 @@ Independent 100-case corpus for **unbiased** evaluation after the Generalization
 
 ## Official first-pass (frozen)
 
-- **Checkpoint:** `fff7b3b` (`feat(scanner): add lightweight taint propagation`)
-- **Ground-truth SHA-256:** `f5dfa3aaee3ee0bc724f45ede88065db820b32a2c7bdf4ec2c5543f50b64f476`
+- **Checkpoint:** `15c34f8` (`feat(scanner): add lightweight taint propagation`)
+- **Ground-truth SHA-256:** `026029a1dd92fcd63f41359608d13ade6fa1fcc1a8fb4e93350fde722af6344c`
 - **Results:** `evaluation/results/holdout2-first-pass/`
 - **Strict overall:** TP 39, TN 42, FP 8, FN 11 — Precision 0.830, Recall 0.780, F1 0.804, Accuracy 0.810, FPR 0.160
 - **Category-aware overall:** identical (no cross-class noise)

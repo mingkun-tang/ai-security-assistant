@@ -201,7 +201,7 @@ def main() -> None:
         "version": "1.0",
         "description": "Unseen Holdout #2 — locked before first scanner evaluation",
         "scanner": "analyze_source",
-        "checkpoint": "fff7b3b",
+        "checkpoint": "15c34f8",
         "cases": [
             {
                 "id": c["id"],

@@ -2,7 +2,7 @@
   "version": "1.0",
   "description": "Unseen Holdout #4 \u2014 final blind evaluation before V1 release gate",
   "scanner": "analyze_source",
-  "checkpoint": "763cb97",
+  "checkpoint": "c279269",
   "cases": [
     {
       "id": "u4_sqli_v_percent_execute_name",

@@ -56,7 +56,7 @@ def main() -> None:
         "version": "1.0",
         "description": "Unseen Holdout #4 — final blind evaluation before V1 release gate",
         "scanner": "analyze_source",
-        "checkpoint": "763cb97",
+        "checkpoint": "c279269",
         "cases": [
             {
                 "id": c["id"],
