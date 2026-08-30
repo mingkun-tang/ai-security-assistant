@@ -39,9 +39,11 @@
   ],
   "activationEvents": [
     "onLanguage:python",
+    "onView:aiSecurityAssistant.findings",
     "onCommand:aiSecurityAssistant.scanCurrentFile",
     "onCommand:aiSecurityAssistant.scanWorkspace",
     "onCommand:aiSecurityAssistant.clearFindings",
+    "onCommand:aiSecurityAssistant.focusFindings",
     "onCommand:aiSecurityAssistant.viewFindingDetails",
     "onCommand:aiSecurityAssistant.generateFixSuggestion",
     "onCommand:aiSecurityAssistant.applySuggestedFix"
@@ -91,10 +93,17 @@
       "ai-security-assistant": [
         {
           "id": "aiSecurityAssistant.findings",
-          "name": "AI Security Assistant"
+          "name": "Findings",
+          "visibility": "visible"
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "aiSecurityAssistant.findings",
+        "contents": "No security findings yet.\n[Scan Workspace](command:aiSecurityAssistant.scanWorkspace)\n[Scan Current File](command:aiSecurityAssistant.scanCurrentFile)"
+      }
+    ],
     "configuration": {
       "title": "AI Security Assistant",
       "properties": {

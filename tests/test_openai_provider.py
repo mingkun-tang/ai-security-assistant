@@ -52,7 +52,39 @@ def test_openai_provider_uses_responses_api_with_structured_request():
     assert call["model"] == "test-model"
     assert call["store"] is False
     assert call["text"] == {"format": {"type": "json_object"}}
-    assert "immutable deterministic analysis payload" in call["input"].lower()
+    assert "json" in call["input"].lower()
+    assert "immutable deterministic analysis" in call["input"].lower()
+    assert json.loads(call["input"].split(":\n", maxsplit=1)[1]) == request
+
+
+def test_openai_fix_request_includes_json_when_using_json_object_format():
+    from pathlib import Path
+
+    from app.ai.fix_suggester import build_fix_request, finding_context_from_report
+    from app.source_analysis import analyze_source
+
+    client = FakeClient(json.dumps({
+        "kind": "ai_fix_suggestion",
+        "based_on_engine": True,
+        "issue_type": "sql_injection",
+        "summary": "Use parameters.",
+        "replacement_code": "cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))",
+        "explanation": "Keeps user input out of SQL syntax.",
+        "warnings": ["Review before applying."],
+        "disclaimer": "AI-generated suggestion. Review before applying.",
+    }))
+    provider = OpenAIProvider(api_key="test-key", model="test-model", client=client)
+    report = analyze_source(Path("tests/fixtures/sqli_vulnerable.py"))
+    context = finding_context_from_report(report, issue_type="sql_injection", line=5)
+    assert context is not None
+    request = build_fix_request(context)
+
+    raw = provider.suggest_fix(request)
+    assert isinstance(raw, str)
+    call = client.responses.calls[0]
+    assert call["text"] == {"format": {"type": "json_object"}}
+    assert "json" in call["input"].lower()
+    assert "json object" in call["input"].lower()
     assert json.loads(call["input"].split(":\n", maxsplit=1)[1]) == request
 
 

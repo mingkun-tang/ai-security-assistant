@@ -13,7 +13,11 @@ import {
 } from "./applyFix";
 import { CliError, analyzeFileJson, scanProjectJson, suggestFixJson } from "./cli";
 import { getExecutablePath } from "./config";
-import { applyDiagnostics } from "./diagnostics";
+import {
+  applyDiagnostics,
+  clearFindingDiagnosticIndex,
+  findingIdForDiagnostic,
+} from "./diagnostics";
 import { FindingDetailPanel } from "./findingDetailPanel";
 import {
   findFindingById,
@@ -39,6 +43,7 @@ export class FindingsController {
   clear(): void {
     this.findings = [];
     this.diagnostics.clear();
+    clearFindingDiagnosticIndex();
     this.tree.setFindings([]);
     this.statusBar.setCount(0);
   }
@@ -55,6 +60,33 @@ export class FindingsController {
 
   getFindings(): SecurityFinding[] {
     return this.findings;
+  }
+
+  /** Resolve a Problems diagnostic back to the live finding for Quick Fix / detail view. */
+  findingForDiagnostic(
+    uri: vscode.Uri,
+    diagnostic: vscode.Diagnostic,
+  ): SecurityFinding | undefined {
+    const id = findingIdForDiagnostic(uri, diagnostic);
+    if (id) {
+      const byId = findFindingById(this.findings, id);
+      if (byId) {
+        return byId;
+      }
+    }
+    const line = diagnostic.range.start.line + 1;
+    const issueType = String(diagnostic.code ?? "");
+    return this.findings.find((finding) => {
+      if (finding.line !== line) {
+        return false;
+      }
+      if (issueType && finding.issueType !== issueType) {
+        return false;
+      }
+      const folder = vscode.workspace.workspaceFolders?.[0];
+      const findingUri = resolveFindingUri(finding.file, folder);
+      return findingUri?.toString() === uri.toString();
+    });
   }
 
   async scanCurrentFile(): Promise<void> {

@@ -8,6 +8,9 @@ import {
   groupFindingsByFile,
 } from "./findings";
 import type { SecurityFinding } from "./types";
+import { buildFindingNodeCommand } from "./uiConstants";
+
+export { buildFindingNodeCommand } from "./uiConstants";
 
 export type FindingsTreeNode = FileNode | FindingNode;
 
@@ -46,11 +49,7 @@ export class FindingNode extends vscode.TreeItem {
           ? "warning"
           : "info",
     );
-    this.command = {
-      command: "aiSecurityAssistant.viewFindingDetails",
-      title: "View Finding Details",
-      arguments: [finding],
-    };
+    this.command = buildFindingNodeCommand(finding);
   }
 }
 

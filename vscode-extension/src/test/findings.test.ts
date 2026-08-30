@@ -157,6 +157,8 @@ describe("formatting and grouping", () => {
     assert.match(message, /SQL Injection — High/);
     assert.match(message, /Why:/);
     assert.match(message, /Fix:/);
+    assert.match(message, /AI Security Assistant sidebar/i);
+    assert.match(message, /Quick Fix/i);
     assert.match(message, /View Security Finding/);
     assert.match(message, /parameterized/i);
   });

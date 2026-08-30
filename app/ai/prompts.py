@@ -41,7 +41,9 @@ Return JSON only, using this exact shape:
 
 
 def build_prompt(explanation_request):
+    # Responses API requires the word "json" in `input` when text.format=json_object.
     return (
-        "Immutable deterministic analysis payload:\n"
+        "Respond with a JSON object for this immutable deterministic analysis "
+        "payload:\n"
         f"{json.dumps(explanation_request, indent=2, sort_keys=True)}"
     )

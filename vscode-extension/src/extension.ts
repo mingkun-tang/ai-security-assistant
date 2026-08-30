@@ -1,6 +1,7 @@
 /** VS Code extension entry point. */
 
 import * as vscode from "vscode";
+import { FindingCodeActionProvider } from "./codeActions";
 import { getScanOnSave } from "./config";
 import { FindingsController } from "./controller";
 import { FindingsStatusBar } from "./statusBar";
@@ -20,10 +21,19 @@ export function activate(context: vscode.ExtensionContext): void {
     showCollapseAll: true,
   });
 
+  const codeActions = vscode.languages.registerCodeActionsProvider(
+    [{ language: "python", scheme: "file" }, { language: "python", scheme: "untitled" }],
+    new FindingCodeActionProvider((uri, diagnostic) =>
+      controller.findingForDiagnostic(uri, diagnostic),
+    ),
+    { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] },
+  );
+
   context.subscriptions.push(
     diagnostics,
     statusBar,
     treeView,
+    codeActions,
     vscode.commands.registerCommand(
       "aiSecurityAssistant.scanCurrentFile",
       () => controller.scanCurrentFile(),

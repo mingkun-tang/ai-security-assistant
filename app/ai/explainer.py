@@ -119,10 +119,21 @@ def validate_ai_output(ai_output, explanation_request):
 def explain_structured_result(structured_result, provider):
     """Generate an optional explanation without mutating engine results."""
 
+    import logging
+
+    from app.ai.provider_errors import classify_provider_exception
+
     explanation_request = build_explanation_request(structured_result)
     try:
         raw_response = provider.explain(explanation_request)
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 - optional AI must not fail the CLI
+        info = classify_provider_exception(exc)
+        logging.getLogger(__name__).warning(
+            "AI explanation unavailable: reason=%s error_type=%s message=%s",
+            info.get("reason"),
+            info.get("error_type"),
+            info.get("safe_message"),
+        )
         return None
 
     return validate_ai_output(

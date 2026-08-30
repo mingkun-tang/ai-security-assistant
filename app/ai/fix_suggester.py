@@ -7,6 +7,10 @@ from typing import Any
 
 from app.ai.explainer import parse_ai_response
 from app.ai.provider import AIUnavailableError
+from app.ai.provider_errors import (
+    INVALID_AI_RESPONSE,
+    classify_provider_exception,
+)
 
 FIX_KIND = "ai_fix_suggestion"
 FIX_DISCLAIMER = (
@@ -48,8 +52,10 @@ Return JSON only, using this exact shape:
 
 
 def build_fix_prompt(fix_request: dict[str, Any]) -> str:
+    # Responses API requires the word "json" in `input` when text.format=json_object.
     return (
-        "Immutable deterministic finding context for an optional fix suggestion:\n"
+        "Respond with a JSON object for this immutable deterministic finding "
+        "context for an optional fix suggestion:\n"
         f"{json.dumps(fix_request, indent=2, sort_keys=True)}"
     )
 
@@ -142,17 +148,44 @@ def validate_fix_output(
 
 
 def suggest_fix(context: dict[str, Any], provider) -> dict[str, Any] | None:
-    """Generate an optional fix suggestion without mutating engine findings."""
+    """Generate an optional fix suggestion without mutating engine findings.
+
+    Prefer :func:`attempt_suggest_fix` when callers need sanitized failure reasons.
+    """
+
+    return attempt_suggest_fix(context, provider)["suggestion"]
+
+
+def attempt_suggest_fix(context: dict[str, Any], provider) -> dict[str, Any]:
+    """Attempt a fix suggestion and return suggestion plus sanitized diagnostics."""
 
     fix_request = build_fix_request(context)
     try:
         raw_response = provider.suggest_fix(fix_request)
-    except AIUnavailableError:
-        return None
-    except Exception:
-        return None
+    except AIUnavailableError as exc:
+        info = classify_provider_exception(exc)
+        return {"suggestion": None, **info}
+    except Exception as exc:  # noqa: BLE001 - must stay optional/non-fatal
+        info = classify_provider_exception(exc)
+        return {"suggestion": None, **info}
 
-    return validate_fix_output(parse_ai_response(raw_response), fix_request)
+    parsed = parse_ai_response(raw_response)
+    validated = validate_fix_output(parsed, fix_request)
+    if validated is None:
+        return {
+            "suggestion": None,
+            "reason": INVALID_AI_RESPONSE,
+            "error_type": "InvalidAIResponse",
+            "safe_message": (
+                "The AI provider returned output that failed local validation."
+            ),
+        }
+    return {
+        "suggestion": validated,
+        "reason": None,
+        "error_type": None,
+        "safe_message": None,
+    }
 
 
 def finding_context_from_report(

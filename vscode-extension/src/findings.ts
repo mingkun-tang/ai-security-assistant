@@ -8,6 +8,7 @@ import type {
   ScanResult,
   SecurityFinding,
 } from "./types";
+import { DIAGNOSTIC_DETAILS_GUIDANCE } from "./uiConstants";
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -238,7 +239,7 @@ export function formatDiagnosticMessage(finding: SecurityFinding): string {
     "Fix:",
     fix,
     "",
-    'Click "View Security Finding" for full details.',
+    DIAGNOSTIC_DETAILS_GUIDANCE,
   ].join("\n");
 }
 

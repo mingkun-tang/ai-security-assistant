@@ -6,8 +6,47 @@ import {
   formatDiagnosticMessage,
 } from "./findings";
 import type { Confidence, SecurityFinding } from "./types";
+import { DIAGNOSTIC_SOURCE } from "./uiConstants";
 
-export const DIAGNOSTIC_SOURCE = "AI Security Assistant";
+export { DIAGNOSTIC_SOURCE } from "./uiConstants";
+
+/** Side index so CodeActions can resolve a diagnostic back to a finding id. */
+const findingIdByDiagnosticKey = new Map<string, string>();
+
+export function diagnosticLookupKey(
+  uri: vscode.Uri,
+  diagnostic: vscode.Diagnostic,
+): string {
+  return [
+    uri.toString(),
+    diagnostic.range.start.line,
+    diagnostic.range.start.character,
+    String(diagnostic.code ?? ""),
+    diagnostic.message,
+  ].join("\u0000");
+}
+
+export function rememberFindingDiagnostic(
+  uri: vscode.Uri,
+  diagnostic: vscode.Diagnostic,
+  findingId: string,
+): void {
+  findingIdByDiagnosticKey.set(
+    diagnosticLookupKey(uri, diagnostic),
+    findingId,
+  );
+}
+
+export function clearFindingDiagnosticIndex(): void {
+  findingIdByDiagnosticKey.clear();
+}
+
+export function findingIdForDiagnostic(
+  uri: vscode.Uri,
+  diagnostic: vscode.Diagnostic,
+): string | undefined {
+  return findingIdByDiagnosticKey.get(diagnosticLookupKey(uri, diagnostic));
+}
 
 export function confidenceToDiagnosticSeverity(
   confidence: Confidence,
@@ -42,6 +81,7 @@ export function applyDiagnostics(
   resolveUri: (file: string) => vscode.Uri | undefined,
 ): void {
   collection.clear();
+  clearFindingDiagnosticIndex();
   const byUri = new Map<string, vscode.Diagnostic[]>();
 
   const sorted = [...findings].sort(
@@ -57,7 +97,9 @@ export function applyDiagnostics(
     }
     const key = uri.toString();
     const list = byUri.get(key) ?? [];
-    list.push(findingToDiagnostic(finding));
+    const diagnostic = findingToDiagnostic(finding);
+    rememberFindingDiagnostic(uri, diagnostic, finding.id);
+    list.push(diagnostic);
     byUri.set(key, list);
   }
 

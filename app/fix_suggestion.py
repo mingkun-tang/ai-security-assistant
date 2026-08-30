@@ -7,10 +7,11 @@ from typing import Any
 
 from app.ai.fix_suggester import (
     FIX_DISCLAIMER,
+    attempt_suggest_fix,
     finding_context_from_report,
-    suggest_fix,
 )
 from app.ai.provider import get_provider
+from app.ai.provider_errors import format_provider_diagnostic
 from app.source_analysis import analyze_source
 
 
@@ -43,6 +44,8 @@ def suggest_fix_for_file(
             "available": False,
             "message": "AI fix suggestion unavailable.",
             "reason": "no_matching_finding",
+            "error_type": None,
+            "safe_message": "No matching deterministic finding was found for the request.",
             "suggestion": None,
             "finding": None,
             "source_snippet": None,
@@ -50,7 +53,8 @@ def suggest_fix_for_file(
         }
 
     selected_provider = provider if provider is not None else get_provider()
-    suggestion = suggest_fix(context, selected_provider)
+    attempt = attempt_suggest_fix(context, selected_provider)
+    suggestion = attempt.get("suggestion")
 
     # Deterministic report must remain unchanged by AI.
     finding_snapshot_after = [
@@ -69,7 +73,16 @@ def suggest_fix_for_file(
             if suggestion is not None
             else "AI fix suggestion unavailable."
         ),
-        "reason": None if suggestion is not None else "provider_unavailable_or_invalid",
+        "reason": None if suggestion is not None else attempt.get("reason"),
+        "error_type": None if suggestion is not None else attempt.get("error_type"),
+        "safe_message": (
+            None if suggestion is not None else attempt.get("safe_message")
+        ),
+        "diagnostic": (
+            None
+            if suggestion is not None
+            else format_provider_diagnostic(attempt)
+        ),
         "suggestion": suggestion,
         "finding": context["finding_snapshot"],
         "source_snippet": context.get("source_snippet") or "",

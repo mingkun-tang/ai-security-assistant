@@ -253,10 +253,32 @@ def run_suggest_fix(
 
     if as_json:
         print(json.dumps(payload, indent=2, sort_keys=False))
+        if not payload.get("available"):
+            diagnostic = payload.get("diagnostic")
+            if diagnostic:
+                print(diagnostic, file=sys.stderr)
         return 0
 
     if not payload.get("available"):
         print(payload.get("message") or "AI fix suggestion unavailable.")
+        diagnostic = payload.get("diagnostic")
+        if diagnostic:
+            print(diagnostic, file=sys.stderr)
+        elif payload.get("reason"):
+            print(
+                f"AI provider diagnostic: reason={payload.get('reason')}"
+                + (
+                    f" error_type={payload.get('error_type')}"
+                    if payload.get("error_type")
+                    else ""
+                )
+                + (
+                    f" message={payload.get('safe_message')}"
+                    if payload.get("safe_message")
+                    else ""
+                ),
+                file=sys.stderr,
+            )
         return 0
 
     suggestion = payload["suggestion"]

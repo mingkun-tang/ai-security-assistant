@@ -142,6 +142,7 @@ def test_no_key_fallback_returns_unavailable():
     )
     assert payload["available"] is False
     assert payload["message"] == "AI fix suggestion unavailable."
+    assert payload["reason"] == "provider_not_configured"
     assert payload["suggestion"] is None
     assert payload["finding"]["issue_type"] == "sql_injection"
     assert report == original
@@ -173,6 +174,8 @@ def test_cli_suggest_fix_json_without_key(capsys, monkeypatch):
     payload = json.loads(captured.out)
     assert payload["available"] is False
     assert payload["message"] == "AI fix suggestion unavailable."
+    assert payload["reason"] == "provider_not_configured"
+    assert "provider_not_configured" in captured.err
     assert payload["finding"]["issue_type"] == "sql_injection"
     assert payload["finding_unchanged"] is True
 
