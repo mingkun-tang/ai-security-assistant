@@ -123,7 +123,6 @@ export class FindingsController {
       }
     }
 
-    const executable = getExecutablePath();
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -132,6 +131,7 @@ export class FindingsController {
       },
       async () => {
         try {
+          const executable = getExecutablePath();
           const raw = await analyzeFileJson(executable, document.fileName);
           // analyzeFileJson already parses; re-parse path for typed errors from text path
           const result =
@@ -164,7 +164,6 @@ export class FindingsController {
       return;
     }
 
-    const executable = getExecutablePath();
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -173,6 +172,7 @@ export class FindingsController {
       },
       async () => {
         try {
+          const executable = getExecutablePath();
           const raw = await scanProjectJson(executable, folder.uri.fsPath);
           const result =
             typeof raw === "string"

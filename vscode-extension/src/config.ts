@@ -2,14 +2,21 @@
 
 import * as vscode from "vscode";
 import { DEFAULT_OPENAI_MODEL } from "./cliEnv";
+import { resolveExecutablePath } from "./executablePath";
 
 export { DEFAULT_OPENAI_MODEL } from "./cliEnv";
+export {
+  ExecutablePathError,
+  WORKSPACE_FOLDER_VARIABLE,
+  resolveExecutablePath,
+} from "./executablePath";
 
 export function getExecutablePath(): string {
   const value = vscode.workspace
     .getConfiguration("aiSecurityAssistant")
     .get<string>("executablePath", "ai-security-assistant");
-  return (value || "ai-security-assistant").trim();
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  return resolveExecutablePath(value ?? "ai-security-assistant", workspaceFolder);
 }
 
 export function getScanOnSave(): boolean {

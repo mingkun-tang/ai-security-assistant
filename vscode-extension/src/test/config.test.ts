@@ -6,6 +6,51 @@ import {
   DEFAULT_OPENAI_MODEL,
   buildCliEnvironment,
 } from "../cliEnv";
+import {
+  ExecutablePathError,
+  WORKSPACE_FOLDER_VARIABLE,
+  resolveExecutablePath,
+} from "../executablePath";
+
+describe("executable path resolution", () => {
+  it("expands ${workspaceFolder} in configured paths", () => {
+    const resolved = resolveExecutablePath(
+      `${WORKSPACE_FOLDER_VARIABLE}/.venv/bin/ai-security-assistant`,
+      "/tmp/project",
+    );
+    assert.equal(
+      resolved,
+      "/tmp/project/.venv/bin/ai-security-assistant",
+    );
+  });
+
+  it("leaves absolute paths unchanged", () => {
+    const absolute =
+      "/Users/example/Appsec Projects/ai-security-assistant/.venv/bin/ai-security-assistant";
+    assert.equal(resolveExecutablePath(absolute, "/tmp/project"), absolute);
+  });
+
+  it("leaves bare command names unchanged", () => {
+    assert.equal(resolveExecutablePath("ai-security-assistant"), "ai-security-assistant");
+  });
+
+  it("throws when ${workspaceFolder} is used without an open workspace folder", () => {
+    assert.throws(
+      () =>
+        resolveExecutablePath(
+          `${WORKSPACE_FOLDER_VARIABLE}/.venv/bin/ai-security-assistant`,
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof ExecutablePathError);
+        assert.match(
+          (error as Error).message,
+          /no workspace folder is open/i,
+        );
+        return true;
+      },
+    );
+  });
+});
 
 describe("OpenAI model configuration", () => {
   it("uses gpt-4o-mini as the documented default", () => {
