@@ -1,28 +1,16 @@
 # AI Security Assistant
 
-**Version 1.0.0** (release candidate documentation — not yet tagged/published)
+AI Security Assistant is an open-source static analysis tool and VS Code extension for finding common security vulnerabilities in Python code.
 
-Educational, **Python-focused**, **SAST-style** security assistant. A **deterministic, evidence-first** static analyzer is the source of truth. Optional AI explains findings and suggests fixes — it does **not** detect vulnerabilities or override the engine.
+The vulnerability scanner is built from scratch and runs locally. It uses deterministic static analysis to track sources, sinks, data flow, and security guards. It currently detects SQL injection, XSS, SSRF, unsafe file uploads, and IDOR patterns.
 
-| | |
-| --- | --- |
-| **Status** | V1.0.0 release candidate |
-| **License** | MIT |
-| **Requires** | Python 3.12+ |
-| **Interfaces** | CLI · VS Code / Cursor extension · HTML/Markdown reports |
+AI is optional and is not used to detect vulnerabilities. Once the scanner finds an issue, an AI layer can explain the finding and suggest a possible fix. The scanner works without an API key.
 
----
+## Why I built it
 
-## What this project is
+I built this project to better understand how application security tools reason about vulnerable code instead of simply sending source code to an LLM and asking whether it looks vulnerable.
 
-- An **educational** security assistant for learning and reviewing common web AppSec issues in Python code
-- **Deterministic static analysis** (AST + evidence flow) decides issue type and confidence
-- **AI is optional**: explanations and fix suggestions only — never classification
-- Designed for developers and students who want local scanning with a reviewable fix workflow
-
-It is **not** a full commercial SAST product and is **not** a substitute for professional AppSec review.
-
----
+The project started as a small rule-based security analyzer and grew into a static analysis engine with a VS Code extension, evaluation suite, and optional AI-assisted remediation.
 
 ## Supported vulnerability classes (V1)
 
@@ -34,7 +22,7 @@ It is **not** a full commercial SAST product and is **not** a substitute for pro
 | **Unsafe File Upload** | Dangerous upload paths, names, or web-root writes |
 | **IDOR / access control** | Object access keyed by attacker-controlled identity without ownership checks |
 
-When signals are weak, the engine may report insufficient evidence rather than force a class.
+If the scanner does not have enough evidence, it avoids forcing a vulnerability classification.
 
 ---
 
@@ -60,28 +48,38 @@ The extension does **not** implement its own detector — it runs the local CLI 
 ## Architecture
 
 ```text
-Parser / AST  →  Evidence  →  Adapter  →  Deterministic Engine  →  Optional AI
-                                                      ↑
-                                         source of truth (never overridden)
+Python Source Code
+       ↓
+   Parser / AST
+       ↓
+ Evidence + Data Flow
+       ↓
+Deterministic Scanner
+       ↓
+ Security Finding
+       ↓
+ Optional AI
+ (explanation / fix suggestion)
 ```
 
-- The engine classifies and scores confidence from evidence
-- AI may explain or propose a fix; invalid or missing AI leaves deterministic output unchanged
-- VS Code and reports consume CLI JSON / report models only
+- Vulnerabilities are detected by the static analysis engine, not by AI.
+- The AI layer only explains existing findings and suggests possible fixes.
+- Removing the AI layer does not affect vulnerability detection.
+- The VS Code extension uses the same deterministic scanner as the CLI.
 
 ---
 
 ## Evaluation
 
-V1 reports two kinds of numbers. Do **not** treat them as interchangeable.
+I tested the scanner in two different ways: with a development regression suite and with separate blind holdout sets.
 
-### Development / regression benchmark
+### Development benchmark
 
-A locked internal suite used during development to catch regressions. Strong scores here measure **stability on known fixtures**, not unbiased real-world accuracy.
+The development suite is used to catch regressions while changing the scanner. Because these cases are visible during development, I do not use its results as a measure of real-world or blind performance.
 
-### Blind holdout evaluation (public summary)
+### Blind holdout results
 
-Two independent, previously unseen corpora were **locked before scanning**. Each set was scanned once at a frozen scanner checkpoint **before** any scanner changes based on those results. These are the public generalization measurements for V1.
+For a more realistic test, I evaluated the scanner on two separate holdout sets that were not used while developing or tuning the scanner.
 
 **Holdout #3** (150 cases)
 
@@ -93,7 +91,7 @@ Two independent, previously unseen corpora were **locked before scanning**. Each
 | F1 | 93.2% |
 | False-positive rate | 5.3% |
 
-**Holdout #4** (100 cases) — final blind measurement before the V1 product gate
+**Holdout #4** (100 cases)
 
 | Metric | Value |
 | --- | ---: |
@@ -103,9 +101,13 @@ Two independent, previously unseen corpora were **locked before scanning**. Each
 | F1 | 92.9% |
 | False-positive rate | 6.0% |
 
-Tuned or re-run results on earlier holdouts are **not** claimed as blind validation.
+Across these two blind holdouts, the scanner achieved about **93% accuracy and 0.93 F1**.
 
-Details and artifacts live under [`evaluation/`](evaluation/).
+These results are specific to the benchmark cases and vulnerability classes tested here. They should not be interpreted as a claim that the scanner will achieve the same accuracy on arbitrary real-world codebases.
+
+Earlier holdouts that were later used for tuning are not included as blind validation results.
+
+The benchmark cases and evaluation artifacts are available under [`evaluation/`](evaluation/).
 
 ---
 
@@ -113,7 +115,7 @@ Details and artifacts live under [`evaluation/`](evaluation/).
 
 ### 1. Install the CLI
 
-Requires **Python 3.12+** and [uv](https://docs.astral.sh/uv/) (recommended) or an editable `pip` install.
+You need **Python 3.12+**. [uv](https://docs.astral.sh/uv/) is recommended; an editable `pip` install also works.
 
 ```sh
 git clone https://github.com/mingkun-tang/ai-security-assistant.git
@@ -139,7 +141,7 @@ Alternatively: `pip install -e .` in a Python 3.12+ virtual environment, then ru
 
 ### 2. Install the VS Code / Cursor extension
 
-From a release asset or a local package:
+Build a local VSIX (sideload install — not Marketplace yet):
 
 ```sh
 cd vscode-extension
@@ -154,21 +156,21 @@ In VS Code or Cursor:
 2. Select `ai-security-assistant-1.0.0.vsix`
 3. Reload the window if prompted
 
-Then open a Python project and run:
+Open a Python project and run:
 
 - **AI Security Assistant: Scan Workspace**
 - **AI Security Assistant: Scan Current File**
 
-Full extension docs: [`vscode-extension/README.md`](vscode-extension/README.md).
+More detail: [`vscode-extension/README.md`](vscode-extension/README.md).
 
-### Troubleshooting: `aiSecurityAssistant.executablePath`
+### Troubleshooting (only if the CLI is not found)
 
-The extension looks for an `ai-security-assistant` executable (default setting value: `ai-security-assistant`).
+Most installs work without changing settings. The extension looks for an `ai-security-assistant` executable (default: `ai-security-assistant`).
 
-If automatic discovery fails (command not found, empty Problems after scan, or CLI errors in the output channel):
+If discovery fails — command not found, empty Problems after scan, or CLI errors in the output channel:
 
-1. Locate your installed executable — commonly `.venv/bin/ai-security-assistant` after `uv sync` in this repo.
-2. Set **AI Security Assistant: Executable Path** (`aiSecurityAssistant.executablePath`) to that **absolute** path, for example:
+1. Find your installed executable (commonly `.venv/bin/ai-security-assistant` after `uv sync` in this repo).
+2. Set **AI Security Assistant: Executable Path** (`aiSecurityAssistant.executablePath`) to that absolute path, for example:
 
 ```json
 {
@@ -205,21 +207,28 @@ Add `--json` where supported for machine-readable deterministic output.
 
 ## AI explanations and fixes
 
-**AI is optional.** Deterministic scanning, VS Code findings, and reports work **without** an OpenAI API key.
+AI is an optional layer on top of the scanner. It does **not** detect vulnerabilities.
 
-When you enable AI:
+The static analysis engine finds and classifies the security issue first. AI can then use that existing finding to:
 
-- Provide your own key via `OPENAI_API_KEY` (see [`README_AI.md`](README_AI.md)). Usage is billed to your OpenAI account.
-- **Default model:** `gpt-4o-mini`. Override with `OPENAI_MODEL`, or in VS Code via `aiSecurityAssistant.openaiModel` (environment wins if already set).
-- Explanations clarify **why** a finding matters — they do **not** change issue type or confidence.
-- Fix suggestions are **proposals**. The extension shows a diff and asks before applying; after apply, it **rescans** automatically.
-- Without a key, AI panels show an unavailable state; scanning still works.
+- explain why the issue matters
+- suggest a possible code fix
+- show the suggested change for review before it is applied
+
+AI cannot create, remove, or override scanner findings. If no API key is configured, scanning, VS Code findings, and security reports still work normally.
+
+To enable AI features:
+
+- Set your own `OPENAI_API_KEY` (see [`README_AI.md`](README_AI.md)).
+- The default model is `gpt-4o-mini`.
+- You can change the model with `OPENAI_MODEL` or through the VS Code extension settings.
+- Fix suggestions should be reviewed before applying them.
 
 ### Privacy and data handling
 
-Finding metadata and relevant **source snippets** used for AI explanations or fix suggestions may be **transmitted to the configured AI provider** (for example OpenAI). Review your organization’s data-handling and compliance requirements before enabling AI. Prefer leaving `OPENAI_API_KEY` unset when working on sensitive codebases.
+AI features send finding metadata and the relevant source-code snippet to the configured AI provider. The entire repository is not sent.
 
-AI requests are intentionally small (finding fields + matched snippet) — not your entire repository — but they still leave your machine.
+If you do not enable AI features, source code is analyzed locally by the deterministic scanner.
 
 ---
 
@@ -238,44 +247,62 @@ Sample output: [`examples/security-report.html`](examples/security-report.html),
 
 ## Screenshots
 
-| Surface | Status |
-| --- | --- |
-| HTML report | ![HTML report](examples/security-report-preview.png) |
-| VS Code findings / Problems | *Placeholder* — `docs/screenshots/vscode-findings.png` |
-| Finding detail view | *Placeholder* — `docs/screenshots/finding-detail.png` |
-| AI fix suggestion | *Placeholder* — `docs/screenshots/ai-fix-suggestion.png` |
-| CLI scan | *Placeholder* — `docs/screenshots/cli-scan.png` |
+### Vulnerability detection
 
-Drop real PNGs into `docs/screenshots/` when available. Do not invent UI screenshots.
+The scanner flags an unsafe SQL query directly in the editor and explains why it was detected.
+
+![SQL injection finding in VS Code](docs/screenshots/vscode-finding.png)
+
+### Optional AI fix suggestion
+
+After the scanner has already identified the vulnerability, the optional AI layer can suggest a fix and show the current code next to the proposed replacement.
+
+![AI fix suggestion](docs/screenshots/ai-fix-suggestion.png)
+
+### Fix applied and rescanned
+
+After applying the suggested change, the file is rescanned and the SQL injection finding is no longer detected.
+
+![Fixed code with no security findings](docs/screenshots/fix-applied.png)
+
+### HTML report
+
+![HTML report](examples/security-report-preview.png)
 
 ---
 
 ## Limitations (V1)
 
-Please read these before relying on scan results:
+V1 is a lightweight Python static analyzer, not a replacement for a full commercial SAST platform or manual security review.
 
-- **Lightweight static analysis** — not full commercial SAST depth
-- **Python-focused** current scope (CLI also supports scenario mode)
-- **Primarily local / single-function** analysis — not full whole-program or arbitrary cross-module interprocedural analysis
-- **Unusual SQL construction**, aliases, or multi-hop query building can be **missed**
-- **Templating / static Markup** patterns can produce **XSS false positives**
-- **Nonstandard / business-key** identity fields can cause **IDOR misses**
-- Occasional **cross-class false-positive noise**
-- **Guard recognition** is **pattern-based**, not full control-flow dominance analysis
-- Results should be **reviewed by a developer or security engineer**
-- **Not a replacement** for mature SAST tooling, code review, penetration testing, or professional AppSec review
-- AI suggestion quality depends on the provider; always review before apply
-- Extension Marketplace / PyPI publish are optional follow-ups (`.vsix` sideload works today)
+Known limitations:
+
+- Analysis is mainly local to individual functions rather than full whole-program or cross-module analysis.
+- Unusual SQL construction, aliases, and multi-step query building can sometimes be missed.
+- Some templating and static markup patterns can produce XSS false positives.
+- IDOR detection may miss applications that use nonstandard business keys or identity fields.
+- Some patterns can produce findings from the wrong vulnerability class.
+- Security guard recognition is pattern-based and does not perform full control-flow analysis.
+- AI fix suggestions can vary by model and should always be reviewed before applying.
+
+Scanner findings should be treated as security signals to investigate, not proof that code is definitely vulnerable or secure.
+
+For production applications, use this tool alongside code review, testing, and established security tooling.
 
 ---
 
 ## Roadmap
 
-- Marketplace + PyPI publish
-- Real README screenshots from product UI
-- Optional GitHub Action for `scan` / `report`
-- Broader language support (post-v1)
-- Engine hardening only with explicit review (detection changes are frozen for this V1 checkpoint)
+Possible next steps after V1:
+
+- Publish the VS Code extension to the Marketplace.
+- Make CLI installation easier, including a possible PyPI release.
+- Add GitHub Actions support for automated security scans.
+- Improve cross-function and cross-module analysis.
+- Expand detection coverage while keeping the scanner deterministic.
+- Explore support for additional programming languages.
+
+The current V1 scanner will remain usable without AI. Future AI features will continue to be optional and separate from vulnerability detection.
 
 ---
 
