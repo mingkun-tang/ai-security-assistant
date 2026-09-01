@@ -3,7 +3,7 @@
   "displayName": "AI Security Assistant",
   "description": "Scan Python code with a local deterministic security engine. Optional AI explains findings and suggests fixes — never overrides detection.",
   "version": "1.0.0",
-  "publisher": "YOUR-PUBLISHER-ID",
+  "publisher": "mingkun-tang",
   "license": "MIT",
   "icon": "media/icon.png",
   "galleryBanner": {
